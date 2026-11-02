@@ -6,8 +6,7 @@ Todos los gráficos, animaciones de extremidades, escenarios, partículas y efec
 
 ## 🌐 Jugar en línea
 
-👉 **[Jugar NEON KOMBAT: Cyber Arena en GitHub Pages](https://TU-USUARIO.github.io/TU-REPOSITORIO/)**
-*(Reemplaza este enlace con la URL pública de tu GitHub Pages)*
+👉 **[Jugar NEON KOMBAT: Cyber Arena en GitHub Pages](https://2026b-sof-jueg-gr3.github.io/rocha-jahir-jueg-gr3/my-first-game/)**
 
 ## 🎮 Características principales
 
