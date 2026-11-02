@@ -18,6 +18,13 @@ const CONFIG_JUEGO = {
   LIMITE_DER: 895,
   SEPARACION_MIN: 56,
 
+  // Dimensiones físicas del cuerpo (hurtbox)
+  ANCHO_CUERPO: 46,
+  ALTO_CUERPO: 110,
+
+  // Modo de depuración visual de cajas de colisión (alternable con tecla H)
+  DEBUG_HITBOXES: false,
+
   // Reglas del combate
   VIDA_MAX: 100,
   ENERGIA_MAX: 100,
@@ -78,6 +85,8 @@ const CONFIG_JUEGO = {
       active: 110,
       recovery: 240,
       velocidadProyectil: 590,
+      anchoProyectil: 34,
+      altoProyectil: 28,
       knockback: 390,
       hitstun: 410,
     },
@@ -286,6 +295,15 @@ function asegurarTexturasBase(scene) {
     g.destroy();
   }
 
+  // Textura del tamaño exacto del cuerpo (46x110) para que physBox, body y pies coincidan
+  if (!scene.textures.exists("tex_cuerpo")) {
+    const g = scene.make.graphics({ add: false });
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(0, 0, CONFIG_JUEGO.ANCHO_CUERPO, CONFIG_JUEGO.ALTO_CUERPO);
+    g.generateTexture("tex_cuerpo", CONFIG_JUEGO.ANCHO_CUERPO, CONFIG_JUEGO.ALTO_CUERPO);
+    g.destroy();
+  }
+
   if (!scene.textures.exists("tex_particula")) {
     const g = scene.make.graphics({ add: false });
     g.fillStyle(0xffffff, 0.25);
@@ -327,23 +345,22 @@ class Fighter {
     this.derrotado = false;
     this.tiempoCaminata = 0;
 
-    // 1. Sombra proyectada en el suelo
-    this.sombra = scene.add.ellipse(config.x, CONFIG_JUEGO.SUELO_Y + 4, 62, 14, 0x000000, 0.55);
+    // 1. Sombra proyectada exactamente debajo de los pies en el suelo
+    this.sombra = scene.add.ellipse(config.x, CONFIG_JUEGO.SUELO_Y + 3, 62, 14, 0x000000, 0.55);
     this.sombra.setDepth(5);
 
-    // 2. Caja física invisible (Arcade Physics) para movimiento y colisión con el suelo
-    this.physBox = scene.physics.add.sprite(config.x, config.y, "tex_pixel");
+    // 2. Caja física invisible con textura 46x110 y origin (0.5, 1) en los pies
+    this.physBox = scene.physics.add.sprite(config.x, config.y, "tex_cuerpo");
     this.physBox.setOrigin(0.5, 1);
     this.physBox.setVisible(false);
-    this.physBox.body.setSize(46, 110);
+    this.physBox.body.setSize(CONFIG_JUEGO.ANCHO_CUERPO, CONFIG_JUEGO.ALTO_CUERPO, false);
+    this.physBox.body.setOffset(0, 0);
     this.physBox.setCollideWorldBounds(true);
     this.physBox.body.setMaxVelocity(700, 950);
 
-    // 3. Hitbox de ataque separada del cuerpo (activa únicamente en fase 'active')
-    this.attackHitbox = scene.add.rectangle(config.x, config.y - 60, 50, 34, 0xffffff, 0);
-    scene.physics.add.existing(this.attackHitbox);
-    this.attackHitbox.body.allowGravity = false;
-    this.attackHitbox.body.enable = false;
+    // 3. Hitbox geométrica de ataque separada del cuerpo (sin cuerpo físico innecesario)
+    this.attackHitbox = new Phaser.Geom.Rectangle(0, 0, 0, 0);
+    this.hitboxAtaqueActiva = false;
 
     // 4. Contenedor visual del personaje y sus extremidades
     this.visual = scene.add.container(config.x, config.y);
@@ -367,6 +384,39 @@ class Fighter {
 
   enElSuelo() {
     return this.physBox.body.blocked.down || this.physBox.body.touching.down;
+  }
+
+  // Hurtbox exacta basada en las coordenadas reales del body físico
+  obtenerHurtbox() {
+    const b = this.physBox.body;
+    return new Phaser.Geom.Rectangle(b.x, b.y, b.width, b.height);
+  }
+
+  obtenerHitboxAtaque() {
+    return this.attackHitbox;
+  }
+
+  actualizarPosicionHitboxAtaque() {
+    if (!this.atacando || this.faseAtaque !== "active" || !this.tipoAtaque) {
+      this.hitboxAtaqueActiva = false;
+      return;
+    }
+
+    const datos = CONFIG_JUEGO.ATAQUES[this.tipoAtaque];
+    if (!datos || !datos.alcanceX) {
+      this.hitboxAtaqueActiva = false;
+      return;
+    }
+
+    const centroX = this.physBox.x + this.direccion * datos.alcanceX;
+    const centroY = this.physBox.y + datos.offsetY;
+    this.attackHitbox.setTo(
+      centroX - datos.anchoHitbox / 2,
+      centroY - datos.altoHitbox / 2,
+      datos.anchoHitbox,
+      datos.altoHitbox
+    );
+    this.hitboxAtaqueActiva = true;
   }
 
   construirCuerpoVisual() {
@@ -492,7 +542,11 @@ class Fighter {
   iniciarTweenRespiracion() {
     if (this.tweenRespiracion) {
       this.tweenRespiracion.stop();
+      this.tweenRespiracion = null;
     }
+    this.torso.setPosition(0, -68);
+    this.cabeza.setPosition(0, -102);
+
     this.tweenRespiracion = this.scene.tweens.add({
       targets: [this.torso, this.cabeza],
       y: "+=2.5",
@@ -509,20 +563,22 @@ class Fighter {
       this.brazoTrasero,
       this.piernaDelantera,
       this.piernaTrasera,
-      this.torso,
-      this.cabeza,
       this.visual,
     ]);
   }
 
   restaurarPosturaBase() {
-    this.torso.setPosition(0, -68).setRotation(0);
-    this.cabeza.setPosition(0, -102).setRotation(0);
+    this.torso.setRotation(0);
+    this.cabeza.setRotation(0);
     this.brazoDelantero.setPosition(8, -82).setRotation(-0.35);
     this.brazoTrasero.setPosition(-8, -82).setRotation(0.25);
     this.piernaDelantera.setPosition(7, -44).setRotation(0);
     this.piernaTrasera.setPosition(-7, -44).setRotation(0);
     this.estelaAtaque.clear().setVisible(false);
+
+    if (!this.tweenRespiracion || !this.tweenRespiracion.isPlaying()) {
+      this.iniciarTweenRespiracion();
+    }
   }
 
   iniciarAtaque(tipo) {
@@ -542,6 +598,7 @@ class Fighter {
     this.tiempoFaseMs = datos.startup;
     this.ataqueYaGolpeo = false;
     this.proyectilDisparado = false;
+    this.hitboxAtaqueActiva = false;
     this.bloqueando = false;
     this.escudoVisual.setVisible(false);
 
@@ -552,8 +609,8 @@ class Fighter {
 
     SONIDO.ataqueAire(tipo === "kick");
 
-    // Animaciones de preparación (startup) con Tweens
-    this.scene.tweens.killTweensOf([this.brazoDelantero, this.piernaDelantera, this.torso]);
+    // Animaciones de preparación (startup) con Tweens solo en extremidades (sin matar la respiración)
+    this.scene.tweens.killTweensOf([this.brazoDelantero, this.brazoTrasero, this.piernaDelantera]);
     if (tipo === "punch") {
       this.scene.tweens.add({
         targets: this.brazoDelantero,
@@ -594,11 +651,9 @@ class Fighter {
     this.estelaAtaque.setVisible(true);
 
     if (this.tipoAtaque === "punch") {
-      this.attackHitbox.setSize(datos.anchoHitbox, datos.altoHitbox);
-      this.attackHitbox.body.setSize(datos.anchoHitbox, datos.altoHitbox);
-      this.attackHitbox.body.enable = true;
+      // Posicionar hitbox en el mismo instante en que entra en fase activa
+      this.actualizarPosicionHitboxAtaque();
 
-      // Brazo se extiende rápidamente hacia adelante
       this.scene.tweens.add({
         targets: this.brazoDelantero,
         x: 28,
@@ -614,11 +669,9 @@ class Fighter {
       this.estelaAtaque.fillStyle(0xffffff, 0.85);
       this.estelaAtaque.fillCircle(50, -77, 8);
     } else if (this.tipoAtaque === "kick") {
-      this.attackHitbox.setSize(datos.anchoHitbox, datos.altoHitbox);
-      this.attackHitbox.body.setSize(datos.anchoHitbox, datos.altoHitbox);
-      this.attackHitbox.body.enable = true;
+      // Posicionar hitbox en el mismo instante en que entra en fase activa
+      this.actualizarPosicionHitboxAtaque();
 
-      // Pierna se extiende con fuerza
       this.scene.tweens.add({
         targets: this.piernaDelantera,
         x: 24,
@@ -634,6 +687,8 @@ class Fighter {
       this.estelaAtaque.fillStyle(0xffffff, 0.75);
       this.estelaAtaque.fillRoundedRect(24, -62, 44, 12, 5);
     } else if (this.tipoAtaque === "special") {
+      this.hitboxAtaqueActiva = false;
+
       this.scene.tweens.add({
         targets: [this.brazoDelantero, this.brazoTrasero],
         x: 22,
@@ -660,7 +715,7 @@ class Fighter {
     const datos = CONFIG_JUEGO.ATAQUES[this.tipoAtaque];
     this.faseAtaque = "recovery";
     this.tiempoFaseMs = datos.recovery;
-    this.attackHitbox.body.enable = false;
+    this.hitboxAtaqueActiva = false;
     this.estelaAtaque.clear().setVisible(false);
 
     // Regreso suave de las extremidades a la postura de guardia
@@ -669,6 +724,14 @@ class Fighter {
       x: 8,
       y: -82,
       rotation: -0.35,
+      duration: datos.recovery,
+      ease: "Sine.easeInOut",
+    });
+    this.scene.tweens.add({
+      targets: this.brazoTrasero,
+      x: -8,
+      y: -82,
+      rotation: 0.25,
       duration: datos.recovery,
       ease: "Sine.easeInOut",
     });
@@ -688,8 +751,9 @@ class Fighter {
     this.tipoAtaque = null;
     this.faseAtaque = null;
     this.tiempoFaseMs = 0;
-    this.attackHitbox.body.enable = false;
+    this.hitboxAtaqueActiva = false;
     this.estelaAtaque.clear().setVisible(false);
+    this.detenerTweensExtremidades();
     this.restaurarPosturaBase();
   }
 
@@ -714,8 +778,11 @@ class Fighter {
       this.physBox.setVelocityX(direccionImpacto * (knockbackX * 0.42));
       this.aturdidoMs = 95;
     } else {
-      // Interrumpe cualquier ataque en curso y aplica aturdimiento + retroceso
+      // Limpiar bloqueo e interrumpir cualquier ataque en curso
+      this.bloqueando = false;
+      this.escudoVisual.setVisible(false);
       this.cancelarAtaque();
+
       this.aturdidoMs = hitstunMs;
       this.physBox.setVelocityX(direccionImpacto * knockbackX);
       if (this.enElSuelo() && knockbackX > 300) {
@@ -751,6 +818,11 @@ class Fighter {
     this.auraEspecial.setVisible(false);
     this.cancelarAtaque();
 
+    if (this.tweenRespiracion) {
+      this.tweenRespiracion.stop();
+      this.tweenRespiracion = null;
+    }
+
     this.physBox.setVelocityX(direccionImpacto * 260);
     this.physBox.setVelocityY(-280);
 
@@ -781,12 +853,12 @@ class Fighter {
     this.tiempoFaseMs = 0;
     this.ataqueYaGolpeo = false;
     this.proyectilDisparado = false;
+    this.hitboxAtaqueActiva = false;
     this.aturdidoMs = 0;
     this.derrotado = false;
 
     this.physBox.setPosition(x, CONFIG_JUEGO.SUELO_Y);
     this.physBox.setVelocity(0, 0);
-    this.attackHitbox.body.enable = false;
 
     this.visual.setPosition(x, CONFIG_JUEGO.SUELO_Y);
     this.visual.setRotation(0);
@@ -794,8 +866,8 @@ class Fighter {
     this.flashBlanco.setAlpha(0);
     this.escudoVisual.setVisible(false);
 
-    this.restaurarPosturaBase();
     this.iniciarTweenRespiracion();
+    this.restaurarPosturaBase();
   }
 
   actualizar(delta, entrada, factorVelocidad = 1) {
@@ -807,7 +879,7 @@ class Fighter {
 
     const alturaVuelo = Math.max(0, CONFIG_JUEGO.SUELO_Y - this.physBox.y);
     const escalaSombra = Phaser.Math.Clamp(1 - alturaVuelo / 260, 0.35, 1);
-    this.sombra.setPosition(this.physBox.x, CONFIG_JUEGO.SUELO_Y + 4);
+    this.sombra.setPosition(this.physBox.x, CONFIG_JUEGO.SUELO_Y + 3);
     this.sombra.setScale(escalaSombra, escalaSombra);
     this.sombra.setAlpha(0.55 * escalaSombra);
 
@@ -820,6 +892,7 @@ class Fighter {
     }
 
     if (this.derrotado) {
+      this.hitboxAtaqueActiva = false;
       if (this.enElSuelo()) {
         this.physBox.setVelocityX(this.physBox.body.velocity.x * 0.88);
       }
@@ -832,6 +905,8 @@ class Fighter {
       this.physBox.setVelocityX(this.physBox.body.velocity.x * 0.9);
       if (this.aturdidoMs <= 0) {
         this.aturdidoMs = 0;
+        this.bloqueando = false;
+        this.escudoVisual.setVisible(false);
         this.restaurarPosturaBase();
       }
       return;
@@ -839,13 +914,6 @@ class Fighter {
 
     // 3. Actualizar fases de ataque (startup -> active -> recovery)
     if (this.atacando) {
-      const datos = CONFIG_JUEGO.ATAQUES[this.tipoAtaque];
-      if (this.faseAtaque === "active" && datos.alcanceX) {
-        const hitX = this.physBox.x + this.direccion * datos.alcanceX;
-        const hitY = this.physBox.y + datos.offsetY;
-        this.attackHitbox.setPosition(hitX, hitY);
-      }
-
       this.tiempoFaseMs -= delta;
       if (this.tiempoFaseMs <= 0) {
         if (this.faseAtaque === "startup") {
@@ -856,8 +924,13 @@ class Fighter {
           this.atacando = false;
           this.tipoAtaque = null;
           this.faseAtaque = null;
+          this.hitboxAtaqueActiva = false;
           this.restaurarPosturaBase();
         }
+      }
+
+      if (this.atacando && this.faseAtaque === "active") {
+        this.actualizarPosicionHitboxAtaque();
       }
       return;
     }
@@ -944,6 +1017,12 @@ class MenuScene extends Phaser.Scene {
     this.input.on("pointerdown", () => {
       window.focus();
       SONIDO.iniciar();
+    });
+
+    this.events.once("shutdown", () => {
+      this.input.keyboard.removeAllListeners();
+      this.time.removeAllEvents();
+      this.tweens.killAll();
     });
 
     asegurarTexturasBase(this);
@@ -1287,6 +1366,7 @@ class FightScene extends Phaser.Scene {
     this.hitStopMs = 0;
     this.camaraLentaMs = 0;
     this.pausado = false;
+    this.debugHitboxes = Boolean(CONFIG_JUEGO.DEBUG_HITBOXES);
 
     // Vida fantasma para el HUD
     this.vidaFantasmaJugador = CONFIG_JUEGO.VIDA_MAX;
@@ -1308,13 +1388,21 @@ class FightScene extends Phaser.Scene {
       SONIDO.iniciar();
     });
 
+    this.events.once("shutdown", () => {
+      this.input.keyboard.removeAllListeners();
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+      this.physics.world.timeScale = 1;
+      this.physics.world.resume();
+    });
+
     asegurarTexturasBase(this);
     this.cameras.main.fadeIn(320, 0, 0, 0);
 
     // 1. Escenario multicapa con elementos animados
     this.crearEscenario();
 
-    // 2. Plataforma de suelo física estática
+    // 2. Plataforma de suelo física estática (borde superior exactamente en SUELO_Y)
     this.sueloFisico = this.add.rectangle(
       CONFIG_JUEGO.ANCHO / 2,
       CONFIG_JUEGO.SUELO_Y + 24,
@@ -1372,12 +1460,15 @@ class FightScene extends Phaser.Scene {
     // Lista de proyectiles especiales activos
     this.proyectiles = [];
 
-    // 5. Construir el HUD Arcade, el menú de pausa y controles
+    // 5. Capa gráfica para el modo de depuración de hitboxes (Tecla H)
+    this.graficosDebug = this.add.graphics().setDepth(55);
+
+    // 6. Construir el HUD Arcade, el menú de pausa y controles
     this.crearHUD();
     this.crearMenuPausa();
     this.configurarControles();
 
-    // 6. Iniciar el Round 1
+    // 7. Iniciar el Round 1
     this.iniciarRound();
   }
 
@@ -1618,7 +1709,7 @@ class FightScene extends Phaser.Scene {
       .setOrigin(1, 0.5)
       .setDepth(32);
 
-    // Indicador de sonido y pausa en el centro inferior
+    // Indicador de sonido, pausa y debug en el centro inferior
     this.textoEstadoAudio = this.add
       .text(ANCHO / 2, energiaY, this.obtenerTextoAudio(), {
         fontFamily: "sans-serif",
@@ -1669,7 +1760,9 @@ class FightScene extends Phaser.Scene {
   }
 
   obtenerTextoAudio() {
-    return `[P/ESC] Pausa   |   [M] Sonido: ${SONIDO.silenciado ? "SILENCIADO 🔇" : "ACTIVO 🔊"}`;
+    const estadoSonido = SONIDO.silenciado ? "MUTE 🔇" : "ON 🔊";
+    const estadoDebug = this.debugHitboxes ? "ON" : "OFF";
+    return `[P/ESC] Pausa  |  [M] Audio: ${estadoSonido}  |  [H] Hitboxes: ${estadoDebug}`;
   }
 
   crearMenuPausa() {
@@ -1721,6 +1814,7 @@ class FightScene extends Phaser.Scene {
       P: Phaser.Input.Keyboard.KeyCodes.P,
       ESC: Phaser.Input.Keyboard.KeyCodes.ESC,
       M: Phaser.Input.Keyboard.KeyCodes.M,
+      H: Phaser.Input.Keyboard.KeyCodes.H,
       Q: Phaser.Input.Keyboard.KeyCodes.Q,
       ENTER: Phaser.Input.Keyboard.KeyCodes.ENTER,
     });
@@ -1733,8 +1827,16 @@ class FightScene extends Phaser.Scene {
       this.textoEstadoAudio.setText(this.obtenerTextoAudio());
     });
 
+    this.input.keyboard.on("keydown-H", () => {
+      this.debugHitboxes = !this.debugHitboxes;
+      this.textoEstadoAudio.setText(this.obtenerTextoAudio());
+      this.dibujarDebugHitboxes();
+    });
+
     this.input.keyboard.on("keydown-Q", () => {
       if (this.pausado) {
+        this.hitStopMs = 0;
+        this.physics.world.timeScale = 1;
         this.physics.world.resume();
         this.tweens.resumeAll();
         this.scene.start("MenuScene", { dificultad: this.confDificultad.id });
@@ -1743,6 +1845,8 @@ class FightScene extends Phaser.Scene {
 
     this.input.keyboard.on("keydown-ENTER", () => {
       if (this.pausado) {
+        this.hitStopMs = 0;
+        this.physics.world.timeScale = 1;
         this.physics.world.resume();
         this.tweens.resumeAll();
         this.scene.restart({ dificultad: this.confDificultad.id });
@@ -1768,6 +1872,21 @@ class FightScene extends Phaser.Scene {
     }
   }
 
+  limpiarProyectiles() {
+    for (let i = this.proyectiles.length - 1; i >= 0; i--) {
+      this.proyectiles[i].destruir();
+    }
+    this.proyectiles = [];
+  }
+
+  consumirJustDownJugador() {
+    Phaser.Input.Keyboard.JustDown(this.cursors.up);
+    Phaser.Input.Keyboard.JustDown(this.teclas.W);
+    Phaser.Input.Keyboard.JustDown(this.teclas.J);
+    Phaser.Input.Keyboard.JustDown(this.teclas.K);
+    Phaser.Input.Keyboard.JustDown(this.teclas.L);
+  }
+
   // ==========================================================================
   // FLUJO DE ROUNDS Y ANUNCIOS
   // ==========================================================================
@@ -1781,12 +1900,9 @@ class FightScene extends Phaser.Scene {
     this.physics.world.resume();
 
     // Limpiar proyectiles y combos previos
-    this.proyectiles.forEach((p) => p.destruir());
-    this.proyectiles = [];
-    this.comboJugador = { conteo: 0, timerMs: 0 };
-    this.comboCPU = { conteo: 0, timerMs: 0 };
-    this.textoComboP1.setAlpha(0);
-    this.textoComboP2.setAlpha(0);
+    this.limpiarProyectiles();
+    this.reiniciarCombo(this.comboJugador, this.textoComboP1);
+    this.reiniciarCombo(this.comboCPU, this.textoComboP2);
 
     // Reiniciar luchadores a sus posiciones iniciales
     this.jugador.reiniciarParaRound(250, 1);
@@ -1801,6 +1917,7 @@ class FightScene extends Phaser.Scene {
     SONIDO.anuncioRound();
 
     this.time.delayedCall(1050, () => {
+      this.consumirJustDownJugador();
       this.mostrarTextoAnuncio("¡FIGHT!", "#ffd600", 650);
       SONIDO.anuncioFight();
       this.estadoRound = "fighting";
@@ -1837,6 +1954,13 @@ class FightScene extends Phaser.Scene {
     if (this.estadoRound === "round_over") return;
     this.estadoRound = "round_over";
 
+    // Cancelar hit-stop si estaba activo para no congelar la caída del K.O.
+    this.hitStopMs = 0;
+    this.physics.world.resume();
+
+    // Destruir proyectiles restantes para que no golpeen ni queden desincronizados
+    this.limpiarProyectiles();
+
     // Cámara lenta breve y dramática
     this.camaraLentaMs = 700;
     this.physics.world.timeScale = 3.2;
@@ -1851,16 +1975,13 @@ class FightScene extends Phaser.Scene {
     }
 
     // Determinar ganador del round
-    let ganador = "empate";
     if (this.jugador.vida > this.cpu.vida) {
-      ganador = "jugador";
       this.roundsJugador++;
     } else if (this.cpu.vida > this.jugador.vida) {
-      ganador = "cpu";
       this.roundsCPU++;
     } else {
       // En caso de empate exacto de vida al acabar el tiempo, ambos reciben punto
-      // a menos que estén en punto de partido, en cuyo caso se repite el round.
+      // a menos que estén en punto de partido, en cuyo caso se juega otro round.
       if (
         this.roundsJugador < CONFIG_JUEGO.ROUNDS_PARA_GANAR - 1 &&
         this.roundsCPU < CONFIG_JUEGO.ROUNDS_PARA_GANAR - 1
@@ -1892,9 +2013,8 @@ class FightScene extends Phaser.Scene {
           });
         });
       } else {
-        if (ganador !== "empate") {
-          this.roundActual++;
-        }
+        // Incrementar siempre el número de round cuando se juega un round nuevo
+        this.roundActual++;
         this.iniciarRound();
       }
     });
@@ -1916,6 +2036,8 @@ class FightScene extends Phaser.Scene {
   // ==========================================================================
   obtenerEntradaJugador() {
     if (this.estadoRound !== "fighting") {
+      // Consumir pulsaciones durante la intro o fin de round para que no queden guardadas
+      this.consumirJustDownJugador();
       return {
         izq: false,
         der: false,
@@ -2039,12 +2161,16 @@ class FightScene extends Phaser.Scene {
   // PROYECTILES, COLISIONES, HIT-STOP Y EFECTOS DE COMBATE
   // ==========================================================================
   dispararProyectilEspecial(atacante) {
+    if (this.estadoRound !== "fighting") return;
+
     SONIDO.lanzarEspecial();
 
     const dir = atacante.direccion;
     const startX = atacante.x + dir * 48;
     const startY = atacante.y - 72;
     const color = atacante.colorPrimario;
+    const anchoP = CONFIG_JUEGO.ATAQUES.special.anchoProyectil;
+    const altoP = CONFIG_JUEGO.ATAQUES.special.altoProyectil;
 
     const contenedor = this.add.container(startX, startY).setDepth(20);
     const g = this.add.graphics();
@@ -2057,9 +2183,10 @@ class FightScene extends Phaser.Scene {
     g.fillCircle(dir * 3, 0, 7);
     contenedor.add(g);
 
-    const hitbox = this.add.rectangle(startX, startY, 34, 28, 0xffffff, 0);
+    const hitbox = this.add.rectangle(startX, startY, anchoP, altoP, 0xffffff, 0);
     this.physics.add.existing(hitbox);
     hitbox.body.allowGravity = false;
+    hitbox.body.setSize(anchoP, altoP);
     hitbox.body.setVelocityX(dir * CONFIG_JUEGO.ATAQUES.special.velocidadProyectil);
 
     const objProyectil = {
@@ -2074,6 +2201,10 @@ class FightScene extends Phaser.Scene {
       get y() {
         return hitbox.y;
       },
+      obtenerHitbox: () => {
+        const b = hitbox.body;
+        return new Phaser.Geom.Rectangle(b.x, b.y, b.width, b.height);
+      },
       destruir: () => {
         if (!objProyectil.activo) return;
         objProyectil.activo = false;
@@ -2086,14 +2217,20 @@ class FightScene extends Phaser.Scene {
   }
 
   verificarImpactos() {
+    if (this.estadoRound !== "fighting") return;
+
     // 1. Ataques cuerpo a cuerpo del Jugador hacia la CPU
     this.procesarChequeoMelee(this.jugador, this.cpu);
+    if (this.estadoRound !== "fighting") return;
 
     // 2. Ataques cuerpo a cuerpo de la CPU hacia el Jugador
     this.procesarChequeoMelee(this.cpu, this.jugador);
+    if (this.estadoRound !== "fighting") return;
 
     // 3. Actualizar y verificar colisión de proyectiles especiales
     for (let i = this.proyectiles.length - 1; i >= 0; i--) {
+      if (this.estadoRound !== "fighting") break;
+
       const p = this.proyectiles[i];
       if (!p.activo) {
         this.proyectiles.splice(i, 1);
@@ -2113,49 +2250,51 @@ class FightScene extends Phaser.Scene {
       if (
         !defensor.derrotado &&
         Phaser.Geom.Intersects.RectangleToRectangle(
-          p.hitbox.getBounds(),
-          defensor.physBox.getBounds()
+          p.obtenerHitbox(),
+          defensor.obtenerHurtbox()
         )
       ) {
         const datos = CONFIG_JUEGO.ATAQUES.special;
         const dirImpacto = p.atacante.x <= defensor.x ? 1 : -1;
+        const hitX = p.x;
+        const hitY = p.y;
+        p.destruir();
+        this.proyectiles.splice(i, 1);
+
         this.aplicarImpactoConfirmado(
           p.atacante,
           defensor,
           datos,
-          p.x,
-          p.y,
+          hitX,
+          hitY,
           dirImpacto,
           true
         );
-        p.destruir();
-        this.proyectiles.splice(i, 1);
       }
     }
   }
 
   procesarChequeoMelee(atacante, defensor) {
     if (
+      this.estadoRound !== "fighting" ||
       !atacante.atacando ||
       atacante.faseAtaque !== "active" ||
       atacante.ataqueYaGolpeo ||
-      !atacante.attackHitbox.body.enable ||
+      !atacante.hitboxAtaqueActiva ||
       defensor.derrotado
     ) {
       return;
     }
 
-    const intersecta = Phaser.Geom.Intersects.RectangleToRectangle(
-      atacante.attackHitbox.getBounds(),
-      defensor.physBox.getBounds()
-    );
+    const rectAtaque = atacante.obtenerHitboxAtaque();
+    const rectDefensor = defensor.obtenerHurtbox();
 
-    if (intersecta) {
+    if (Phaser.Geom.Intersects.RectangleToRectangle(rectAtaque, rectDefensor)) {
       atacante.ataqueYaGolpeo = true;
       const datos = CONFIG_JUEGO.ATAQUES[atacante.tipoAtaque];
       const dirImpacto = atacante.x <= defensor.x ? 1 : -1;
-      const impactoX = (atacante.attackHitbox.x + defensor.x) / 2;
-      const impactoY = atacante.attackHitbox.y;
+      const impactoX = (rectAtaque.centerX + rectDefensor.centerX) / 2;
+      const impactoY = rectAtaque.centerY;
 
       this.aplicarImpactoConfirmado(
         atacante,
@@ -2170,6 +2309,8 @@ class FightScene extends Phaser.Scene {
   }
 
   aplicarImpactoConfirmado(atacante, defensor, datosAtaque, x, y, dirImpacto, esEspecial) {
+    if (this.estadoRound !== "fighting") return;
+
     const resultado = defensor.recibirImpacto(
       datosAtaque.dano,
       datosAtaque.knockback,
@@ -2186,28 +2327,24 @@ class FightScene extends Phaser.Scene {
       );
     }
 
-    // Registrar estadísticas y combos si no fue bloqueado
+    // Registrar estadísticas y combos si no fue bloqueado; reiniciar combo del defensor
     const esJugadorAtacante = atacante === this.jugador;
     if (!resultado.bloqueado) {
       if (esJugadorAtacante) {
         this.estadisticas.golpesJugador++;
         this.estadisticas.danoJugador += resultado.danoReal;
         this.registrarGolpeCombo(this.comboJugador, this.textoComboP1, true);
+        this.reiniciarCombo(this.comboCPU, this.textoComboP2);
       } else {
         this.estadisticas.golpesCPU++;
         this.estadisticas.danoCPU += resultado.danoReal;
         this.registrarGolpeCombo(this.comboCPU, this.textoComboP2, false);
+        this.reiniciarCombo(this.comboJugador, this.textoComboP1);
       }
     }
 
     // Sonido del impacto
     SONIDO.impacto(resultado.bloqueado ? "block" : datosAtaque.tipo);
-
-    // Hit-stop (~60 ms congelando la acción para dar peso al golpe)
-    const duracionHitStop = esEspecial
-      ? CONFIG_JUEGO.HIT_STOP_ESPECIAL_MS
-      : CONFIG_JUEGO.HIT_STOP_MS;
-    this.activarHitStop(duracionHitStop);
 
     // Sacudida de cámara
     if (resultado.bloqueado) {
@@ -2223,8 +2360,8 @@ class FightScene extends Phaser.Scene {
     const emisorElegido = resultado.bloqueado
       ? this.emisorImpactoBloqueo
       : esJugadorAtacante
-      ? this.emisorImpactoP1
-      : this.emisorImpactoP2;
+        ? this.emisorImpactoP1
+        : this.emisorImpactoP2;
     emisorElegido.explode(esEspecial ? 26 : 15, x, y);
 
     // Onda expansiva circular en el punto de impacto
@@ -2245,10 +2382,17 @@ class FightScene extends Phaser.Scene {
     // Número de daño flotante
     this.mostrarNumeroDano(x, y - 18, resultado.danoReal, resultado.bloqueado, atacante.colorPrimario);
 
-    // Verificar K.O. inmediato
+    // Verificar K.O. inmediato (sin activar hit-stop si el round termina)
     if (defensor.vida <= 0 && this.estadoRound === "fighting") {
       this.finalizarRound("KO");
+      return;
     }
+
+    // Hit-stop (~60 ms congelando la acción para dar peso al golpe)
+    const duracionHitStop = esEspecial
+      ? CONFIG_JUEGO.HIT_STOP_ESPECIAL_MS
+      : CONFIG_JUEGO.HIT_STOP_MS;
+    this.activarHitStop(duracionHitStop);
   }
 
   activarHitStop(ms) {
@@ -2306,6 +2450,13 @@ class FightScene extends Phaser.Scene {
     }
   }
 
+  reiniciarCombo(datosCombo, objetoTexto) {
+    datosCombo.conteo = 0;
+    datosCombo.timerMs = 0;
+    this.tweens.killTweensOf(objetoTexto);
+    objetoTexto.setAlpha(0);
+  }
+
   actualizarCombos(delta) {
     [
       [this.comboJugador, this.textoComboP1],
@@ -2314,9 +2465,47 @@ class FightScene extends Phaser.Scene {
       if (combo.conteo > 0) {
         combo.timerMs -= delta;
         if (combo.timerMs <= 0) {
-          combo.conteo = 0;
-          texto.setAlpha(0);
+          this.reiniciarCombo(combo, texto);
         }
+      }
+    });
+  }
+
+  // ==========================================================================
+  // MODO DE DEPURACIÓN DE CAJAS DE COLISIÓN (TECLA H)
+  // ==========================================================================
+  dibujarDebugHitboxes() {
+    this.graficosDebug.clear();
+    if (!this.debugHitboxes) return;
+
+    // 1. Hurtboxes de ambos luchadores en VERDE
+    this.graficosDebug.lineStyle(2, 0x00ff66, 0.95);
+    this.graficosDebug.fillStyle(0x00ff66, 0.15);
+    [this.jugador, this.cpu].forEach((luchador) => {
+      const hurt = luchador.obtenerHurtbox();
+      this.graficosDebug.fillRectShape(hurt);
+      this.graficosDebug.strokeRectShape(hurt);
+    });
+
+    // 2. Hitboxes de ataque activas en ROJO
+    this.graficosDebug.lineStyle(2.5, 0xff1744, 1);
+    this.graficosDebug.fillStyle(0xff1744, 0.3);
+    [this.jugador, this.cpu].forEach((luchador) => {
+      if (luchador.atacando && luchador.faseAtaque === "active" && luchador.hitboxAtaqueActiva) {
+        const hit = luchador.obtenerHitboxAtaque();
+        this.graficosDebug.fillRectShape(hit);
+        this.graficosDebug.strokeRectShape(hit);
+      }
+    });
+
+    // 3. Hitboxes de proyectiles en AMARILLO
+    this.graficosDebug.lineStyle(2, 0xffea00, 1);
+    this.graficosDebug.fillStyle(0xffea00, 0.28);
+    this.proyectiles.forEach((p) => {
+      if (p.activo) {
+        const rectP = p.obtenerHitbox();
+        this.graficosDebug.fillRectShape(rectP);
+        this.graficosDebug.strokeRectShape(rectP);
       }
     });
   }
@@ -2460,9 +2649,12 @@ class FightScene extends Phaser.Scene {
       this.hitStopMs -= delta;
       if (this.hitStopMs <= 0) {
         this.hitStopMs = 0;
-        this.physics.world.resume();
+        if (!this.pausado) {
+          this.physics.world.resume();
+        }
       }
       this.actualizarHUD(delta);
+      this.dibujarDebugHitboxes();
       return;
     }
 
@@ -2505,8 +2697,9 @@ class FightScene extends Phaser.Scene {
       }
     }
 
-    // 7. Refrescar HUD
+    // 7. Refrescar HUD y capa de depuración de hitboxes
     this.actualizarHUD(delta);
+    this.dibujarDebugHitboxes();
   }
 }
 
@@ -2538,6 +2731,12 @@ class ResultScene extends Phaser.Scene {
     this.input.on("pointerdown", () => {
       window.focus();
       SONIDO.iniciar();
+    });
+
+    this.events.once("shutdown", () => {
+      this.input.keyboard.removeAllListeners();
+      this.time.removeAllEvents();
+      this.tweens.killAll();
     });
 
     asegurarTexturasBase(this);
