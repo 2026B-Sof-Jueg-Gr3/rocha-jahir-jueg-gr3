@@ -2360,8 +2360,8 @@ class FightScene extends Phaser.Scene {
     const emisorElegido = resultado.bloqueado
       ? this.emisorImpactoBloqueo
       : esJugadorAtacante
-        ? this.emisorImpactoP1
-        : this.emisorImpactoP2;
+      ? this.emisorImpactoP1
+      : this.emisorImpactoP2;
     emisorElegido.explode(esEspecial ? 26 : 15, x, y);
 
     // Onda expansiva circular en el punto de impacto
