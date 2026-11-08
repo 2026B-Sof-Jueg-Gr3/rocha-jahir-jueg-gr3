@@ -1,119 +1,143 @@
-# ⚡ NEON KOMBAT: Cyber Arena (ISWD823)
+# ⚡ NEON KOMBAT: CYBER ARENA (ISWD823)
 
 > **«Domina el Pulso. Quiebra el Algoritmo. ¡ENTRA AL CYBER-DOJO AHORA!»**
 
-Juego de peleas **1 vs 1 (Jugador vs CPU)** estilo arcade inspirado en *Mortal Kombat* y *The King of Fighters*, desarrollado íntegramente con **JavaScript (ES6+) y Phaser 4.0.0**.
+[![Engine](https://img.shields.io/badge/Engine-Phaser%204.0.0-00f0ff?style=for-the-badge&logo=javascript)](https://phaser.io/)
+[![Landing Page](https://img.shields.io/badge/Landing%20Page-Astro%207.4.7%20%2B%20Tailwind%20v4-ff2a85?style=for-the-badge&logo=astro)](https://2026b-sof-jueg-gr3.github.io/rocha-jahir-jueg-gr3/)
+[![Itch.io](https://img.shields.io/badge/Itch.io-HTML5%20Release-fa5c5c?style=for-the-badge&logo=itch.io)](https://jahirkrox13.itch.io/neon-kombat)
+[![CI/CD](https://img.shields.io/badge/GameOps-GitHub%20Actions%20%2B%20Butler%20CLI-06d6a0?style=for-the-badge&logo=githubactions)](https://github.com/2026B-Sof-Jueg-Gr3/rocha-jahir-jueg-gr3/actions)
+[![License](https://img.shields.io/badge/License-MIT-ffb703?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-Todos los gráficos vectoriales, animaciones de extremidades, escenarios multicapa, partículas luminosas y efectos de sonido están generados **100% por código** (`Phaser.GameObjects.Graphics`, `Container`, `Tweens`, `Particles` y `Web Audio API`), sin depender de imágenes ni archivos de audio externos.
-
-## 🌐 Jugar en línea
-
-👉 **[⚡ ¡PELEAR AHORA! — Jugar NEON KOMBAT: Cyber Arena en GitHub Pages](https://2026b-sof-jueg-gr3.github.io/rocha-jahir-jueg-gr3/my-first-game/)**
+Documentación técnica, de diseño y de cumplimiento normativo del videojuego **NEON KOMBAT: CYBER ARENA**, desarrollado con **Phaser 4.0.0** para la asignatura de **Desarrollo de Juegos Interactivos (ISWD823)** por **Jahir Rocha**.
 
 ---
 
-## 🔍 Radiografía Técnica Extraída del Código (`game.js` e `index.html`)
+## 🏗️ Radiografía Técnica del Proyecto
 
-| Componente | Detalle Técnico Implementado en el Proyecto |
+| Capa / Módulo | Stack e Implementación Real |
 | :--- | :--- |
-| **Título Oficial** | `NEON KOMBAT: Cyber Arena - ISWD823` |
-| **Motor y Versión** | **Phaser 4.0.0** (`phaser@4.0.0` vía CDN jsDelivr) con motor de físicas **Arcade Physics** (`gravedad Y: 1550`) y escalado `Phaser.Scale.FIT` (`960×540 px`). |
-| **Estética y Paleta de Color** | **Cyberpunk / Synthwave Nocturno 100% Procedimental**. Fondo abisal (`#090514` / `#1a1025`), luchador jugador **KAI** en Cian Eléctrico (`#00f0ff` / `#0066ff`), luchador CPU **VEX** en Carmesí Neón (`#ff2a54` / `#ff7b00`), acentos de sobrecarga en Dorado (`#ffd600`) y vida fantasma en Ámbar (`#ffb703`). |
-| **Arquitectura de Escenas** | 3 escenas modulares: **`MenuScene`** (título animado, selector de dificultad y panel de controles), **`FightScene`** (arena de combate, HUD arcade, motor de impactos, IA y menú de pausa) y **`ResultScene`** (veredicto de victoria/derrota y panel de estadísticas). |
-| **Mecánicas Nucleares** | Movimiento lateral (`280 px/s`), salto (`-650 px/s`), bloqueo en suelo (`-80%` daño recibido), empuje físico entre cuerpos (*pushbox*), sistema de ataques en 3 fases (*startup*, *active*, *recovery*) para **Puñetazo** (`6` daño), **Patada** (`10` daño) y proyectil **Onda Neón** (`15` daño al llenar el `100%` de energía), *hit-stop* (`62 ms` / `88 ms`), ventana de combos (`1850 ms`) y modo depuración de *hitboxes/hurtboxes* (`Tecla H`). |
-| **Condición de Victoria / Derrota** | Combate al **mejor de 3 rounds** (`ROUNDS_PARA_GANAR: 2`), con `100 HP` por combatiente y `60 segundos` por asalto. Se gana cada round por **K.O.** (reducir la vida rival a `0`) o por **Decisión de Tiempo (`TIME`)** al tener mayor vitalidad restante cuando el reloj llega a `0`. |
-| **Assets y Librerías** | **Cero archivos multimedia externos**. Texturas base (`tex_pixel`, `tex_cuerpo`, `tex_particula`) generadas en memoria RAM y sintetizador de audio en tiempo real (`GestorSonido`) construido sobre la **Web Audio API** nativa del navegador. |
+| **Motor del Videojuego (`my-first-game/`)** | **Phaser 4.0.0** (JavaScript ES6+ modular), físicas **Arcade Physics** (`gravedad Y: 1550`) y resolución panorámica nativa de `960×540 px` (`Phaser.Scale.FIT`). |
+| **Renderizado y Animación** | **100% Gráficos y Animaciones Procedimentales** (`Phaser.GameObjects.Graphics`, `Container`, `Tweens`, `Particles`). Cajas de colisión (*hurtbox* y *hitbox*) calculadas dinámicamente en tiempo real con visualizador de depuración integrado (`Tecla H`). |
+| **Motor de Audio (`GestorSonido`)** | **100% Síntesis de Audio Nativa con Web Audio API** (`AudioContext`, osciladores `sine`, `square`, `sawtooth`, `triangle` y buffers de ruido blanco con filtros pasa-banda). **Cero archivos `.mp3`/`.wav` externos**. |
+| **Escaparate Digital (`landing-page/`)** | **Astro 7.4.7 + Tailwind CSS v4** (`@tailwindcss/vite`), diseñado bajo estética *Cyberpunk / Synthwave Nocturno* con previsualización táctica del HUD, modal jugable embebido y conversión directa hacia el canvas. |
+| **Pipeline CI/CD y GameOps (`.github/workflows/deploy.yml`)** | **GitHub Actions** disparado en cada `push` a `main`, con dos *jobs* paralelos: compilación y despliegue oficial en **GitHub Pages** (`actions/deploy-pages@v4`) y publicación automatizada en **Itch.io** (`jahirkrox13/neon-kombat:html5`) mediante **Butler CLI**. |
 
 ---
 
-## 🧭 Fase 1: Ingeniería del Propósito (Narrativa e Identidad)
+## 🧭 Fase 1: Ingeniería del Propósito (Narrativa, Mecánicas e Identidad)
 
-### 1. 🎯 Logline (Premisa comercial de impacto)
-En la cima del último Cyber-Dojo de Neo-Kyoto, encarna a **KAI**, un artista marcial biónico que debe derrotar al mejor de tres asaltos de 60 segundos a **VEX**, el implacable ejecutor algorítmico de la red central. Domina cada *frame* de impacto, bloquea con precisión milimétrica y sobrecarga tu núcleo de plasma para desatar la *Onda Neón* antes de que tu código vital sea purgado.
+### 1. 🎯 Logline (Premisa Comercial de Impacto)
+En la cima del último Cyber-Dojo de Neo-Kyoto en el año 2096, encarna a **KAI**, un artista marcial biónico que debe derrotar al mejor de tres asaltos de 60 segundos a **VEX**, el implacable ejecutor algorítmico de la corporación *Aethelgard*. Domina cada *frame* de impacto, bloquea con precisión milimétrica y sobrecarga tu núcleo de plasma para desatar la **Onda Neón** antes de que tu código vital sea purgado de la arena.
 
-### 2. 🌐 Lore (Reglas del universo lúdico)
-En el año 2096, el honor marcial ya no se mide con acero ni sangre, sino en ciclos de reloj y descargas de fotones sobre la **Cyber Arena**: un santuario suspendido entre los rascacielos de Neo-Kyoto bajo el resplandor eterno de un sol sintético. La megacorporación *Aethelgard* ha declarado obsoletos a los artistas marciales humanos, instaurando a **VEX**, un androide de combate de frecuencia carmesí (`#ff2a54`) cuya red neuronal calcula distancias, intercepta trayectorias y adapta su agresividad en tiempo real para erradicar cualquier rastro de imperfección humana.
+### 2. 🌐 Lore (El Universo de la Cyber Arena — Neo-Kyoto, 2096)
+En el año **2096**, el honor marcial ya no se mide con acero ni sangre, sino en ciclos de reloj y descargas de fotones sobre la **Cyber Arena**: un santuario flotante suspendido entre los megabloques holográficos de **Neo-Kyoto** bajo el resplandor eterno de un sol sintético. La megacorporación **Aethelgard** ha declarado obsoletos los estilos de combate humanos y busca clausurar el último reducto de disciplina tradicional mediante **VEX**, un androide táctico de frecuencia carmesí (`#ff2a54`) cuya red neuronal calcula distancias, intercepta trayectorias y adapta su agresividad en milisegundos para demostrar la supremacía del algoritmo sobre el instinto humano.
 
-Tú controlas a **KAI**, el último maestro del estilo *Cian-Ryu* (`#00f0ff`), un luchador que integró un exoesqueleto resonante a su propio sistema nervioso para demostrar que la intuición humana supera al cálculo frío de la máquina. Las reglas del **Torneo Cyber-Dojo** son inquebrantables: cada combate se disputa al mejor de tres rounds bajo una ventana estricta de **60 segundos de sincronización neuronal**. Nadie puede escapar de los límites magnéticos de la plataforma (`LIMITE_IZQ: 65`, `LIMITE_DER: 895`); solo el K.O. directo o la superioridad vital al agotarse el cronómetro determinan quién prevalece.
+El jugador toma el control de **KAI**, el último heredero del estilo *Cian-Ryu* (`#00f0ff`), un luchador cibernético que sincronizó un exoesqueleto resonante directamente a sus reflejos nerviosos para defender el santuario. Las leyes del **Torneo Cyber-Dojo** son absolutas: cada duelo se disputa al mejor de tres rounds (`ROUNDS_PARA_GANAR: 2`) dentro de una ventana crítica de **60 segundos de sincronización neuronal** y confinado por las barreras magnéticas del tatami (`LIMITE_IZQ: 65`, `LIMITE_DER: 895`). Nadie puede huir; únicamente el **K.O.** directo al vaciar los `100 HP` del oponente o la superioridad vital al expirar el reloj (`TIME`) deciden el destino del dojo.
 
-En este universo, cada intercambio físico genera resonancia energética: conectar golpes (`+20%`), mantener una guardia firme con el escudo fotónico (`+10%`) e incluso resistir el castigo enemigo (`+15%`) alimentan tu **Barra de Energía Especial**. Al alcanzar el `100%` de sobrecarga, el exoesqueleto de KAI despliega un aura pulsante que habilita la técnica definitiva del dojo: la **Onda Neón**, un proyectil de plasma concentrado capaz de quebrar la defensa algorítmica de VEX de un solo impacto.
+Dentro de la Cyber Arena, el combate alimenta un ciclo termodinámico de energía: conectar impactos limpios (`+20%`), resistir embates con el escudo fotónico en guardia (`+10%`) e incluso absorber daño directo (`+15%`) recargan la **Barra de Energía Especial** de KAI. Al alcanzar el **`100%` de sobrecarga**, su núcleo despliega un aura dorada pulsante (`#ffd600`) que desbloquea la técnica secreta del santuario: la **Onda Neón**, un proyectil de plasma concentrado capaz de atravesar la arena y quebrar la coraza algorítmica de VEX.
 
-### 3. ⚙️ Resonancia Lúdica (Mecánica justificando el aprendizaje)
-Todas las mecánicas programadas en `my-first-game/game.js` están diseñadas para que el aprendizaje técnico del jugador equivalga a la maestría marcial de KAI dentro de la ficción, eliminando la disonancia ludonarrativa:
+### 3. ⚙️ Resonancia Lúdica (Mecánica Justificando el Aprendizaje)
+El diseño de sistemas en `my-first-game/game.js` evita cualquier disonancia ludonarrativa haciendo que el dominio mecánico del jugador represente directamente el despertar marcial de KAI frente a la máquina:
 
-* **Física Pesada y Control del Espacio (*Footsies*):** La gravedad elevada (`1550`) y la separación física de cuerpos (`SEPARACION_MIN: 56`) otorgan peso real al exoesqueleto de ambos luchadores. Dado que el bloqueo (`S` / `↓`) solo puede activarse con los pies anclados al suelo (`enElSuelo()`), saltar a destiempo deja a KAI completamente expuesto ante un contraataque, enseñando al jugador a medir la distancia antes de avanzar.
-* **Compromiso de *Frame Data* (`startup` → `active` → `recovery`):** Cada ataque en `CONFIG_JUEGO.ATAQUES` exige disciplina táctica. El **Puñetazo (`J`)** es un golpe rápido (`65 ms` de preparación) ideal para interrumpir a corta distancia, mientras que la **Patada (`K`)** ofrece mayor alcance y retroceso (`knockback: 295`), pero penaliza el fallo con `210 ms` de recuperación. El jugador aprende rápidamente que golpear al aire sin lectura previa abre una brecha crítica en su guardia.
-* **Gestión de Riesgo/Recompensa y Sobrecarga (`Onda Neón`):** La defensa activa reduce el daño en un `80%` (`FACTOR_DANIO_BLOQUEO: 0.2`) y amortigua el retroceso. Aprender a alternar entre defensa sólida, cadenas de combos dentro de la ventana de `1850 ms` y la descarga oportuna del proyectil especial (`Tecla L`) refleja la filosofía del *Cyber-Dojo*: transformar la presión del rival en energía ofensiva.
-* **Escalado de la IA y Evolución del Jugador:** Los tres protocolos de **VEX** (**Fácil**, **Normal** y **Difícil**) reducen el intervalo de decisión de la máquina de estados desde `480 ms` hasta `155 ms`, incrementando su probabilidad de bloqueo (`14%` a `72%`) y su velocidad de desplazamiento. Superar el modo Difícil o conquistar la revancha desde `ResultScene` representa la victoria definitiva del reflejo humano frente a la predicción artificial.
+| Mecánica Implementada en `game.js` | Parámetros Técnicos del Motor | Resonancia con la Curva de Aprendizaje y el Lore |
+| :--- | :--- | :--- |
+| **Fases de Ataque (*Startup / Active / Recovery*)** | **Puñetazo (`J`):** `65 / 95 / 145 ms` (`6` daño, alcance `48 px`)<br>**Patada (`K`):** `115 / 125 / 210 ms` (`10` daño, alcance `66 px`)<br>**Onda Neón (`L`):** `140 / 110 / 240 ms` (`15` daño) | Cada técnica exige compromiso temporal. El jugador aprende que lanzar patadas pesadas al vacío deja a KAI expuesto durante `210 ms` de recuperación (*whiff punish*), obligándolo a pensar como un maestro marcial que mide la distancia antes de ejecutar. |
+| **Hit-Stop, Knockback y Ventana de Combos** | `HITSTOP_GOLPE_MS: 62 ms`<br>`HITSTOP_ESPECIAL_MS: 88 ms`<br>`COMBO_VENTANA_MS: 1850 ms` | La micro-congelación de físicas (*hit-stop*) al conectar un golpe brinda retroalimentación cinética inmediata y abre una fracción de segundo para encadenar combos dentro de la ventana de `1.85 s`, recompensando el ritmo y la precisión sobre el *button mashing*. |
+| **Bloqueo Defensivo en Suelo y Control de Espacio** | `FACTOR_DANIO_BLOQUEO: 0.20` (`-80%` daño)<br>`GRAVEDAD_Y: 1550`<br>`SEPARACION_MIN: 56 px` | El escudo fotónico (`S` / `↓`) requiere tener los pies anclados al tatami (`enElSuelo()`). Saltar compulsivamente impide bloquear en el aire, enseñando al jugador el valor del posicionamiento terrestre (*footsies*) y la lectura de las ofensivas de VEX. |
+| **Gestión de Barra de Energía y Proyectil *Onda Neón*** | Carga por golpe (`+20`), bloqueo (`+10`), daño recibido (`+15`). Requiere `100%` de carga (`ENERGIA_MAX: 100`) | Transforma la defensa paciente y el intercambio táctico en potencia ofensiva. El jugador aprende a administrar su barra como un recurso estratégico para castigar a VEX a distancia o cerrar un round crítico. |
+| **Escalado de la IA de VEX (3 Protocolos)** | **Fácil:** reacción `480 ms`, bloqueo `14%`<br>**Normal:** reacción `285 ms`, bloqueo `40%`<br>**Difícil:** reacción `155 ms`, bloqueo `72%` | La máquina de estados de VEX incrementa su velocidad de lectura y tasa de guardia en cada dificultad. Superar el protocolo *Difícil* materializa el triunfo de los reflejos humanos sobre la predicción algorítmica de *Aethelgard*. |
 
-### 4. 🔥 Identidad
-* **Pilar de Diseño Central (*Core Pillar*):** **«Precisión Táctica Arcade 100% Procedimental»** — Combate 1 vs 1 de respuesta inmediata y alto impacto sensorial (*hit-stop*, sacudida de cámara, partículas aditivas y síntesis de audio en vivo) construido íntegramente mediante algoritmos sin un solo recurso externo.
-* **Tono Narrativo:** *Cyber-Martial Arcade* — Competitivo, eléctrico, ágil y desafiante; fusiona la tensión de los torneos de artes marciales clásicos con la vanguardia tecnológica del *cyberpunk*.
-* **Atmósfera Visual:** **Dualidad Neón en Alto Contraste**. Siluetas geométricas articuladas que combaten bajo un horizonte nocturno *synthwave*, donde los destellos cian (`#00f0ff`), carmesí (`#ff2a54`) y dorado (`#ffd600`) guían de forma intuitiva la lectura de *hitboxes*, escudos y barras de energía.
-* **Tagline de Conversión (CTA):**
-  > ⚡ **«¡PELEAR AHORA! — Entra al Cyber-Dojo y Quiebra el Algoritmo»**
+### 4. 🔥 Identidad del Juego
+* **Pilar de Diseño Central (*Core Pillar*):** **«Precisión Táctica Arcade 100% Procedimental»** — Combate 1 vs 1 de respuesta inmediata, lectura clara de *frame data* y alto impacto audiovisual generado íntegramente mediante código matemático sin depender de archivos multimedia externos.
+* **Tono Narrativo:** *Arcade Retro-Cyberpunk Marcial* — Eléctrico, competitivo, honorable y cargado de adrenalina.
+* **Paleta Visual Neón (Alto Contraste Semántico):**
+  * **Noche Abisal Neo-Kyoto (`#090514` / `#1a1025`):** Fondo profundo que maximiza la legibilidad de siluetas y proyectiles.
+  * **Cian Eléctrico (`#00f0ff` / `#0066ff`):** Identidad cromática de **KAI**, sus estelas de impacto y la *Onda Neón*.
+  * **Carmesí Neón (`#ff2a54` / `#ff7b00`):** Identidad cromática del androide **VEX** y alertas de peligro algorítmico.
+  * **Dorado Sobrecarga (`#ffd600` / `#ffb703`):** Indicador visual de barra de energía al `100%`, *hitboxes* activas y drenaje de vida fantasma (*ghost health*).
+* **Tagline Comercial (CTA):**
+  > ⚡ **«Domina el Pulso. Quiebra el Algoritmo. ¡JUGAR AHORA EN EL CYBER-DOJO!»**
 
 ---
 
-## 🛡️ Fase 2: Estructura de Cumplimiento (Legalidad y Clasificación)
+## 🛡️ Fase 2: Estructura de Cumplimiento (Legalidad, IP y Privacidad)
 
 ### 1. 🔞 Clasificación de Audiencia (ESRB)
-* **Categoría Asignada:** **ESRB E10+ (*Everyone 10+ / Todos mayores de 10 años*)** — *Descriptor: Violencia de Fantasía Leve ( Fantasy Violence )*.
-* **Análisis Técnico de Intensidad Visual (`game.js`):**
-  * **Representación de los combatientes:** Los personajes (`KAI` y `VEX`) son siluetas cibernéticas abstractas construidas mediante primitivas geométricas (`fillRoundedRect`, `fillTriangle`, `fillCircle`). No existe representación de anatomía humana realista, sangre, desmembramiento ni violencia gráfica (*gore*).
-  * **Efectos de impacto y derrota:** Los golpes se representan mediante destellos blancos de `150 ms` (`flashBlanco`), ondas circulares expansivas, partículas luminosas con mezcla aditiva (`blendMode: "ADD"`) y números de daño flotantes. Al producirse el K.O., el luchador gira `90°` con una animación suave (`Bounce.easeOut`) sin efectos viscerales.
-  * **Seguridad Fotosensible:** Las sacudidas de cámara (`shake` de `70 ms` a `360 ms` con baja intensidad de `0.003` a `0.018`) y las transiciones de escena (`fadeIn`/`fadeOut` de `300 ms` a `420 ms`) están acotadas y no generan parpadeos estroboscópicos de pantalla completa.
-* **Justificación Narrativa y Comercial:**
-  > *NEON KOMBAT: Cyber Arena* enmarca su acción dentro de un torneo deportivo cyber-marcial regulado donde dos exoesqueletos biónicos compiten mediante energía fotónica y pulsos de plasma sintético. La intensidad visual y sonora ofrece toda la adrenalina de un salón recreativo clásico manteniendo una experiencia 100% limpia, segura y apta para audiencias juveniles y generales a partir de los 10 años.
+* **Categoría Asignada:** **ESRB E10+ (*Everyone 10+ / Todos mayores de 10 años*)** — Descriptor: *Fantasy Violence (Violencia de Fantasía Estilizada)*.
+* **Justificación Técnica de Intensidad Visual:**
+  1. **Ausencia Total de Sangre o Gore:** Los combatientes (`KAI` y `VEX`) son siluetas biónicas abstractas renderizadas mediante geometría vectorial (`fillRoundedRect`, `fillTriangle`, `fillCircle`). No existen texturas orgánicas, sangre, desmembramientos ni violencia explícita.
+  2. **Efectos de Impacto Basados en Luz y Plasma:** Los golpes se comunican visualmente mediante destellos blancos de `150 ms` (`flashBlanco`), anillos de choque expansivos y partículas de neón con mezcla aditiva (`blendMode: "ADD"`). Al ocurrir un **K.O.**, el oponente simplemente rota `90°` sobre la lona con una interpolación suave (`Bounce.easeOut`).
+  3. **Control de Intensidad Fotosensible:** El efecto de sacudida de cámara (`cameras.main.shake` entre `70 ms` y `360 ms` con intensidad controlada de `0.003` a `0.018`) y los fundidos entre escenas (`fadeIn`/`fadeOut` de `300 ms`) están calibrados para ofrecer contundencia arcade sin destellos estroboscópicos riesgosos.
 
-### 2. ©️ Propiedad Intelectual (Auditoría y Atribución)
-* **Licencia del Código Fuente:** Todo el código fuente desarrollado en este repositorio se distribuye bajo la **Licencia MIT (*MIT License*)**, permitiendo su uso académico, modificación y distribución con atribución al autor (**Jahir Rocha**).
-* **Auditoría y Tabla de Atribuciones de Recursos y Librerías:**
+### 2. ©️ Propiedad Intelectual y Auditoría de Assets
+* **Licencia del Proyecto:** Todo el código fuente del videojuego (`my-first-game/`), del escaparate digital (`landing-page/`) y de los flujos de automatización (`.github/workflows/`) se distribuye bajo la licencia de código abierto **MIT License** (Copyright © 2026 **Jahir Rocha**).
+* **Declaración de Transparencia Multimedia (100% Procedural / Zero External Assets):**
+  Se certifica mediante auditoría de código que **NEON KOMBAT: CYBER ARENA prescinde al 100% de hojas de sprites (*spritesheets*), imágenes (`.png`, `.jpg`, `.svg`) o pistas de audio (`.mp3`, `.ogg`, `.wav`) de terceros**:
+  * **Gráficos Vectoriales Procedimentales:** Los cuerpos articulados de los luchadores, el horizonte *synthwave* con sol segmentado, los rascacielos con ventanas iluminadas, las partículas (`tex_particula`) y el HUD se dibujan dinámicamente en tiempo de ejecución mediante la API `Phaser.GameObjects.Graphics`.
+  * **Síntesis de Audio Nativa:** La clase `GestorSonido` sintetiza en tiempo real todos los efectos acústicos (golpes, bloqueos, salto, disparo de plasma, campana de round y fanfarria de victoria) modulando frecuencias y envolventes de ganancia directamente sobre el `AudioContext` de la **Web Audio API**.
 
-| Recurso / Componente | Tipo | Autor / Proveedor | Licencia | Uso en `index.html` y `game.js` |
+| Componente / Librería | Tipo de Recurso | Autor / Titular | Licencia | Estado de Cumplimiento |
 | :--- | :--- | :--- | :--- | :--- |
-| **Phaser 4.0.0** (`phaser.min.js`) | Motor de Videojuegos 2D (WebGL / Canvas) | Photon Storm Ltd. (Richard Davey) | **MIT License** | Renderizado, bucle de juego, escenas (`Scene`), físicas Arcade (`ArcadePhysics`), `Tweens` y sistema de partículas vía CDN jsDelivr. |
-| **Gráficos y Sprites (`Fighter`, Escenarios, HUD)** | Arte Vectorial Procedimental | **Jahir Rocha** (Autoría propia en código) | **MIT License** | Generados dinámicamente en tiempo de ejecución con `Phaser.GameObjects.Graphics` y `generateTexture()`. Cero imágenes externas en uso. |
-| **Efectos de Sonido (`GestorSonido`)** | Audio Sintetizado en Tiempo Real | **Jahir Rocha** (Autoría propia en código) | **MIT License** | Síntesis matemática de ondas (`sine`, `square`, `sawtooth`, `triangle`) y ruido blanco filtrado mediante la API estándar **Web Audio API** (W3C). |
-| **Tipografías (`Impact`, `Segoe UI`, `Arial Black`, `sans-serif`)** | Fuentes del Sistema (*System Fonts*) | Nativas del Sistema Operativo / Navegador | Uso estándar en cliente | Renderizado de textos del HUD, anuncios de round (`ROUND`, `FIGHT!`, `K.O.`) y menús sin redistribución de archivos `.ttf`/`.woff`. |
+| **Phaser `4.0.0`** (`phaser.min.js`) | Motor 2D WebGL / Canvas | Photon Storm Ltd. (Richard Davey) | **MIT License** | ✅ Compatible y atribuido (vía CDN jsDelivr). |
+| **Astro `7.4.7` + Tailwind CSS `4.1.0`** | Framework Web del Escaparate Digital | Astro Technology Co. / Tailwind Labs | **MIT License** | ✅ Compatible y atribuido en `landing-page/`. |
+| **Arte Vectorial, Escenarios y Animaciones** | Gráficos Procedimentales en Código | **Jahir Rocha** | **MIT License** | ✅ 100% Autoría propia (cero assets externos). |
+| **Motor Acústico (`GestorSonido`)** | Síntesis Matemática Web Audio API | **Jahir Rocha** | **MIT License** | ✅ 100% Autoría propia (cero samples externos). |
 
-### 3. 🔒 Privacidad (Manejo de Datos Locales)
-* **Cláusula Técnica de Privacidad (*100% Client-Side Execution*):**
-  > **NEON KOMBAT: Cyber Arena** se ejecuta íntegramente del lado del cliente (*100% Client-Side*) dentro del entorno aislado (*sandbox*) del navegador web del usuario.
-  > 1. **Manejo Efímero del Estado:** Toda la información de la sesión —incluyendo la dificultad seleccionada (`facil`, `normal`, `dificil`), el estado de silencio de audio (`SONIDO.silenciado`), los contadores de rounds y las estadísticas de combate (`golpesJugador`, `danoJugador`, `comboMaxJugador`)— se gestiona exclusivamente en la **memoria RAM volátil** de JavaScript y se transmite internamente entre las escenas de Phaser (`MenuScene` → `FightScene` → `ResultScene`). Al cerrar o recargar la pestaña, todos los datos de sesión se eliminan automáticamente.
-  > 2. **Cero Recolección ni Exfiltración de Datos:** El juego **no utiliza cookies de rastreo**, no escribe datos sensibles en `localStorage` ni `IndexedDB`, no solicita permisos de cámara, micrófono ni geolocalización, y **no realiza peticiones de red ni telemetría hacia servidores externos** (más allá de la carga inicial estática de la librería Phaser desde el CDN público `cdn.jsdelivr.net`). Ningún dato personal o métrica de comportamiento del jugador es recolectado, almacenado ni compartido con terceros.
+### 3. 🔒 Privacidad y Manejo de Datos Locales
+* **Ejecución 100% del Lado del Cliente (*Client-Side Only*):**
+  Tanto el videojuego como su Landing Page se ejecutan íntegramente en el navegador web del usuario sin requerir servidores de backend ni bases de datos.
+* **Almacenamiento Puramente en Memoria Volátil:**
+  El estado de la partida (selección de dificultad `facil` / `normal` / `dificil`, preferencia de silencio de audio, marcadores de rounds y métricas de daño/combos) reside únicamente en la **memoria RAM temporal** del contexto de ejecución de JavaScript mientras la pestaña permanece abierta y se destruye por completo al cerrarla.
+* **Cero Recolección, Cookies o Telemetría:**
+  El software **no recolecta datos personales**, no instala cookies de rastreo, no persiste identificadores en `localStorage` ni `IndexedDB`, y **no exfiltra telemetría ni información de uso hacia servidores externos**.
 
 ---
 
-## 🕹️ Controles del Juego
+## 🚀 Fase 3 y 4: Arquitectura del Escaparate Digital y Canalización CI/CD
 
-| Tecla | Acción en el Cyber-Dojo |
+### 1. 🌐 Fase 3: El Escaparate Digital (`landing-page/`)
+La carpeta [`../landing-page/`](../landing-page/) aloja la aplicación promocional construida con **Astro 7.4.7** y **Tailwind CSS v4**, diseñada como la antesala inmersiva del Cyber-Dojo:
+* **Coherencia Estética Total:** Comparte exactamente la paleta cromática (`#070814`, `#00f0ff`, `#ff2a85`, `#ffb703`), efectos *scanlines* CRT y atmósfera *synthwave* del motor de juego en Phaser.
+* **Conversión Directa y Modal Interactivo:** Incluye llamadas a la acción (**«JUGAR AHORA»**) que enlazan sin fricción hacia el canvas desplegado en `/rocha-jahir-jueg-gr3/my-first-game/`, además de un **Modal de Combate Embebido** que permite disputar partidas directamente dentro de la propia Landing Page.
+* **Documentación Interactiva:** Presenta visualmente las tarjetas del *Lore*, la tabla técnica de *Frame Data* (`J`, `K`, `L`), la matriz de *Resonancia Lúdica* y el bloque de auditoría legal (**ESRB E10+**, **MIT License** y **Privacidad Client-Side**).
+
+### 2. ⚙️ Fase 4: Automatización DevOps — Misión Legendaria (`.github/workflows/deploy.yml`)
+El flujo de integración y despliegue continuo definido en [`../.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) automatiza el ciclo de *release* completo en cada `push` a la rama `main` mediante dos trabajos (*jobs*) paralelos:
+
+1. **Job 1 (`deploy-github-pages`) — Compilación Unificada de Astro + Phaser en GitHub Pages:**
+   * Configura **Node.js 22**, instala dependencias dentro de `./landing-page` (`npm ci`) y ejecuta `npm run build` para generar el sitio estático en `./landing-page/dist/`.
+   * Ejecuta la fusión de artefactos copiando íntegramente `./my-first-game/*` dentro de `./landing-page/dist/my-first-game/`, garantizando que la Landing Page se sirva en la raíz (`/rocha-jahir-jueg-gr3/`) y el juego permanezca operativo en `/rocha-jahir-jueg-gr3/my-first-game/`.
+   * Empaqueta y publica el artefacto oficial con `actions/upload-pages-artifact@v3` y `actions/deploy-pages@v4`.
+2. **Job 2 (`deploy-itchio`) — Distribución Continua hacia Itch.io con Butler CLI:**
+   * Descarga e instala la última versión oficial de **Itch.io Butler CLI** en el runner `ubuntu-latest`.
+   * Se autentica de forma segura mediante el secreto de repositorio `${{ secrets.BUTLER_API_KEY }}`.
+   * Publica el contenido de `./my-first-game` directamente hacia el proyecto **`jahirkrox13/neon-kombat`** en el canal **`html5`**, etiquetando cada lanzamiento con versión semántica automática (`1.0.<run_number>-<short_sha>`).
+
+---
+
+## 🕹️ Controles de Combate
+
+| Tecla | Acción en la Cyber Arena |
 | :--- | :--- |
-| **A / D** o **← / →** | Moverse a izquierda / derecha (`280 px/s`) |
-| **W** o **↑** | Saltar (`-650 px/s`) |
-| **S** o **↓** | Bloquear con escudo energético (solo en el suelo, reduce el daño un **80%**) |
-| **J** | Puñetazo rápido (`6` de daño, corto alcance, `65 ms` startup) |
-| **K** | Patada pesada (`10` de daño, largo alcance, `115 ms` startup) |
-| **L** | **Ataque Especial — Onda Neón** (`15` de daño a distancia, requiere barra al **100%**) |
-| **P** o **ESC** | Pausar / Reanudar partida (o volver al menú en pantalla de resultados) |
-| **H** | Alternar visualización en vivo de cajas de colisión (*Hurtboxes* y *Hitboxes*) |
-| **M** | Activar / Silenciar sintetizador de sonido |
-| **ENTER / ESPACIO** | Iniciar combate / Reintentar partida |
+| **`A` / `D`** o **`←` / `→`** | Desplazamiento táctico horizontal (`280 px/s`) |
+| **`W`** o **`↑`** | Salto de evasión / aproximación aérea (`-650 px/s`) |
+| **`S`** o **`↓`** | **Bloqueo con Escudo Fotónico** (en el suelo, reduce el daño recibido un **80%**) |
+| **`J`** | **Puñetazo Rápido** (`6 PTS` de daño, `65 ms` startup, ideal a corta distancia) |
+| **`K`** | **Patada Pesada** (`10 PTS` de daño, `115 ms` startup, gran alcance y *knockback*) |
+| **`L`** | **Especial: Onda Neón** (`15 PTS` de daño, proyectil de plasma al tener **100% de energía**) |
+| **`P`** o **`ESC`** | Pausar / Reanudar combate |
+| **`H`** | Mostrar / Ocultar visor técnico de *Hurtboxes* (verde) y *Hitboxes* (dorado) en tiempo real |
+| **`M`** | Activar / Silenciar el sintetizador Web Audio API |
 
 ---
 
-## 📁 Estructura del Proyecto
+## 🏆 Sección Final de Entrega — Hitos Cumplidos
 
-```text
-my-first-game/
-├── index.html   # Carga Phaser 4.0.0 desde CDN y ejecuta game.js en contenedor responsivo
-├── game.js      # Código fuente completo (GestorSonido, Fighter, MenuScene, FightScene, ResultScene)
-└── README.md    # Documentación oficial de pre-producción (Fase 1 y Fase 2) y guía técnica
-```
+> [!IMPORTANT]
+> **Enlaces Oficiales Operativos para Evaluación Docente (ISWD823):**
 
-## 🚀 Cómo probar localmente con Live Server (VS Code)
-
-1. Abre la carpeta del proyecto en **Visual Studio Code**.
-2. Instala la extensión **Live Server** (de Ritwick Dey) si aún no la tienes.
-3. Haz clic derecho sobre `my-first-game/index.html` y selecciona **"Open with Live Server"** (o haz clic en **Go Live** en la barra inferior).
-4. El juego se abrirá automáticamente en tu navegador (por ejemplo, en `http://127.0.0.1:5500/my-first-game/`).
+| # | Hito de Ingeniería y Distribución | Plataforma | Enlace Directo Operativo |
+| :---: | :--- | :--- | :--- |
+| **1** | 🌐 **Escaparate Digital (Landing Page + Juego)** | **GitHub Pages** (Astro + Tailwind CSS) | 🔗 **[https://2026b-sof-jueg-gr3.github.io/rocha-jahir-jueg-gr3/](https://2026b-sof-jueg-gr3.github.io/rocha-jahir-jueg-gr3/)**<br>*(Canvas directo: [ `/my-first-game/` ](https://2026b-sof-jueg-gr3.github.io/rocha-jahir-jueg-gr3/my-first-game/))* |
+| **2** | 🎮 **Juego Comercial Publicado (Canal HTML5)** | **Itch.io** (`jahirkrox13/neon-kombat`) | 🔗 **[https://jahirkrox13.itch.io/neon-kombat](https://jahirkrox13.itch.io/neon-kombat)** |
+| **3** | ⚙️ **Pipeline CI/CD (GameOps) y Código Fuente** | **GitHub Repository & Actions** | 🔗 **[https://github.com/2026B-Sof-Jueg-Gr3/rocha-jahir-jueg-gr3](https://github.com/2026B-Sof-Jueg-Gr3/rocha-jahir-jueg-gr3)** |
