@@ -1,0 +1,107 @@
+name: GameOps CI/CD — GitHub Pages & Itch.io
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# ============================================================================
+# VARIABLES GLOBALES DE DISTRIBUCIÓN
+# ============================================================================
+env:
+  ITCH_USER: "jahirkrox13"          # Corregido con tu usuario real de Itch.io
+  ITCH_GAME: "neon-kombat"          # Slug de tu juego en Itch.io
+  ITCH_CHANNEL: "html5"             # Canal de distribución web en Itch.io
+  NODE_VERSION: "22"
+
+# Permisos requeridos para el despliegue oficial en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Control de concurrencia para evitar colisiones en despliegues seguidos
+concurrency:
+  group: "gameops-release-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  # ==========================================================================
+  # JOB 1: Compilación de Astro (Escaparate Digital) + Juego en GitHub Pages
+  # ==========================================================================
+  deploy-github-pages:
+    name: "🌐 Deploy Landing Page + Juego (GitHub Pages)"
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: "📥 Checkout del repositorio"
+        uses: actions/checkout@v4
+
+      - name: "⚙️ Configurar entorno Node.js ${{ env.NODE_VERSION }}"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: landing-page/package-lock.json
+
+      - name: "🔧 Configurar GitHub Pages"
+        uses: actions/configure-pages@v5
+
+      - name: "📦 Instalar dependencias de Astro (landing-page)"
+        working-directory: ./landing-page
+        run: npm ci
+
+      - name: "🚀 Compilar Landing Page con Astro"
+        working-directory: ./landing-page
+        run: npm run build
+
+      - name: "🕹️ Integrar carpeta my-first-game dentro de landing-page/dist/my-first-game"
+        run: |
+          mkdir -p ./landing-page/dist/my-first-game
+          cp -r ./my-first-game/* ./landing-page/dist/my-first-game/
+          ls -la ./landing-page/dist/
+          ls -la ./landing-page/dist/my-first-game/
+
+      - name: "📤 Subir artefacto compilado para GitHub Pages"
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./landing-page/dist
+
+      - name: "🌍 Publicar en GitHub Pages"
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ==========================================================================
+  # JOB 2: Publicación Automática del Juego HTML5 en Itch.io con Butler CLI
+  # ==========================================================================
+  deploy-itchio:
+    name: "🎮 Publicar en Itch.io (Butler CLI - Canal HTML5)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "📥 Checkout del repositorio"
+        uses: actions/checkout@v4
+
+      - name: "⬇️ Descargar e instalar Itch.io Butler CLI"
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          sudo unzip -o butler.zip -d /usr/local/bin
+          sudo chmod +x /usr/local/bin/butler
+          butler -V
+
+      - name: "🚀 Publicar build HTML5 hacia Itch.io"
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo "::error::El secreto BUTLER_API_KEY no está configurado en Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="1.0.${{ github.run_number }}-${SHORT_SHA}"
+          echo "Publicando ${ITCH_USER}/${ITCH_GAME}:${ITCH_CHANNEL} (Versión: ${VERSION})..."
+          butler push ./my-first-game "${ITCH_USER}/${ITCH_GAME}:${ITCH_CHANNEL}" --userversion "${VERSION}"

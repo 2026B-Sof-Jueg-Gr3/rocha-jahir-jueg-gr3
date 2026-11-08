@@ -1,0 +1,1091 @@
+---
+import '../styles/global.css';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const gameUrl = 'https://2026b-sof-jueg-gr3.github.io/rocha-jahir-jueg-gr3/my-first-game/';
+const gameEmbedUrl = `${base}/my-first-game/?embed=1`;
+
+const ataques = [
+  {
+    tecla: 'J',
+    nombre: 'PUÑETAZO · Jab Cian',
+    dano: '6 PTS',
+    startup: '65 ms',
+    active: '95 ms',
+    recovery: '145 ms',
+    alcance: '48 px',
+    knockback: '185',
+    hitstun: '230 ms',
+    badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-400/40',
+    borderClass: 'border-cyan-500/40 hover:border-cyan-400',
+    glowClass: 'hover:shadow-[0_0_30px_-5px_rgba(0,240,255,0.3)]',
+    rol: 'Interrupción ultrarrápida a corta distancia con mínima ventana de castigo en recuperación.',
+  },
+  {
+    tecla: 'K',
+    nombre: 'PATADA · Impulso Pesado',
+    dano: '10 PTS',
+    startup: '115 ms',
+    active: '125 ms',
+    recovery: '210 ms',
+    alcance: '66 px',
+    knockback: '295',
+    hitstun: '320 ms',
+    badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-400/40',
+    borderClass: 'border-amber-500/40 hover:border-amber-400',
+    glowClass: 'hover:shadow-[0_0_30px_-5px_rgba(255,183,3,0.3)]',
+    rol: 'Control de espacio (footsies) a media distancia con alto empuje; exige lectura previa para no quedar vendido.',
+  },
+  {
+    tecla: 'L',
+    nombre: 'ONDA NEÓN · Especial 100%',
+    dano: '15 PTS',
+    startup: '140 ms',
+    active: '110 ms',
+    recovery: '240 ms',
+    alcance: '590 px/s',
+    knockback: '390',
+    hitstun: '410 ms',
+    badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-400/40',
+    borderClass: 'border-rose-500/40 hover:border-rose-400',
+    glowClass: 'hover:shadow-[0_0_30px_-5px_rgba(255,42,84,0.35)]',
+    rol: 'Proyectil de plasma puro que cruza toda la Cyber Arena al sobrecargar el núcleo de energía al 100%.',
+  },
+];
+
+const protocolosIA = [
+  {
+    nombre: 'PROTOCOLO 01 · FÁCIL',
+    colorHex: '#00e676',
+    barWidth: '36%',
+    intervalo: '480 ms',
+    bloqueo: '14%',
+    agresividad: '36%',
+    velocidad: '0.84x',
+    desc: 'CPU paciente y predecible. Ideal para calibrar el peso del exoesqueleto y dominar las 3 fases de ataque.',
+  },
+  {
+    nombre: 'PROTOCOLO 02 · NORMAL',
+    colorHex: '#00f0ff',
+    barWidth: '68%',
+    intervalo: '270 ms',
+    bloqueo: '44%',
+    agresividad: '64%',
+    velocidad: '1.00x',
+    desc: 'Duelo equilibrado con reflejos tácticos, lectura de proyectiles en vuelo y contraataques sólidos.',
+  },
+  {
+    nombre: 'PROTOCOLO 03 · DIFÍCIL',
+    colorHex: '#ff2a54',
+    barWidth: '96%',
+    intervalo: '155 ms',
+    bloqueo: '72%',
+    agresividad: '86%',
+    velocidad: '1.12x',
+    desc: 'Directiva de exterminio Aethelgard. Reacción inhumana de 155 ms, bloqueo constante y castigo milimétrico.',
+  },
+];
+
+const controles = [
+  { tecla: 'A / D  o  ← / →', accion: 'Desplazamiento táctico lateral', detalle: '280 px/s sobre la plataforma energizada', cat: 'MOVIMIENTO' },
+  { tecla: 'W  o  ↑', accion: 'Propulsión vertical (Salto)', detalle: 'Fuerza -650 px/s · Gravedad Arcade 1550', cat: 'MOVIMIENTO' },
+  { tecla: 'S  o  ↓', accion: 'Escudo Fotónico de Bloqueo', detalle: 'Exclusivo en suelo · Reduce el daño recibido un 80%', cat: 'DEFENSA' },
+  { tecla: 'Tecla J', accion: 'Puñetazo Rápido (Jab)', detalle: '6 PTS de daño · +20% de energía al impactar', cat: 'ATAQUE' },
+  { tecla: 'Tecla K', accion: 'Patada de Largo Alcance', detalle: '10 PTS de daño · Alto retroceso (knockback 295)', cat: 'ATAQUE' },
+  { tecla: 'Tecla L', accion: 'Ataque Especial: Onda Neón', detalle: '15 PTS de daño · Requiere barra de energía al 100%', cat: 'ESPECIAL' },
+  { tecla: 'P  o  ESC', accion: 'Pausa Táctica / Navegación', detalle: 'Congela físicas/tweens y permite reiniciar o salir al menú', cat: 'SISTEMA' },
+  { tecla: 'Tecla H', accion: 'Visor de Hitboxes / Hurtboxes', detalle: 'Depuración en vivo: Hurtbox (Verde), Ataque (Rojo), Plasma (Amarillo)', cat: 'DEBUG' },
+  { tecla: 'Tecla M', accion: 'Conmutador Web Audio API', detalle: 'Activa o silencia el sintetizador acústico en tiempo real', cat: 'AUDIO' },
+  { tecla: 'ENTER / ESPACIO', accion: 'Confirmación / Revancha Rápida', detalle: 'Inicia el combate desde el menú o lanza la revancha inmediata', cat: 'SISTEMA' },
+];
+
+const resonanciaPills = [
+  {
+    icono: '⚖️',
+    tag: 'GRAVEDAD 1550 · PUSHBOX 56 PX',
+    titulo: 'Física Pesada y Control del Espacio (Footsies)',
+    explicacion:
+      'En el Lore, KAI y VEX portan exoesqueletos cibernéticos de alta densidad. Saltar sin medir la distancia desactiva la capacidad de desplegar el escudo fotónico en el aire, obligando al jugador a dominar el posicionamiento en tierra como un verdadero maestro marcial.',
+    accent: 'from-cyan-500/20 to-blue-600/5 border-cyan-500/30',
+  },
+  {
+    icono: '⏱️',
+    tag: 'STARTUP → ACTIVE → RECOVERY',
+    titulo: 'Compromiso de Frame Data en 3 Fases',
+    explicacion:
+      'Ningún golpe es instantáneo en game.js. Presionar botones sin lectura previa deja las extremidades de KAI expuestas durante la fase de recuperación (145 ms a 240 ms). El motor castiga la impulsividad y premia la lectura fría de los tiempos del rival.',
+    accent: 'from-amber-500/20 to-orange-600/5 border-amber-500/30',
+  },
+  {
+    icono: '⚡',
+    tag: '+20 GOLPE · +10 BLOQUEO · +15 RESISTENCIA',
+    titulo: 'Resiliencia Convertida en Sobrecarga (Onda Neón)',
+    explicacion:
+      'El Núcleo de Sobrecarga recompensa tanto la ofensiva limpia como la templanza bajo presión. Absorber la embestida de VEX tras el escudo energético (-80% daño) alimenta tu barra hasta el 100% para liberar la legendaria Onda Neón.',
+    accent: 'from-rose-500/20 to-pink-600/5 border-rose-500/30',
+  },
+  {
+    icono: '🧠',
+    tag: 'HIT-STOP 62 MS · COMBO WINDOW 1850 MS',
+    titulo: 'Evolución del Jugador vs. Escalado Algorítmico',
+    explicacion:
+      'La confirmación sensorial del hit-stop, la barra de vida fantasma y el contador de combos entrenan tus reflejos reales. Superar a VEX en dificultad Difícil (155 ms de reacción) encarna literalmente el triunfo del instinto humano sobre la máquina.',
+    accent: 'from-purple-500/20 to-indigo-600/5 border-purple-500/30',
+  },
+];
+
+const atribuciones = [
+  {
+    recurso: 'Phaser 4.0.0 (phaser.min.js)',
+    tipo: 'Motor de Videojuegos Web 2D (WebGL / Canvas)',
+    autor: 'Photon Storm Ltd. (Richard Davey)',
+    licencia: 'MIT License',
+    uso: 'Ciclo de escenas, físicas Arcade, Tweens, partículas aditivas y cámaras vía CDN jsDelivr.',
+  },
+  {
+    recurso: 'Sprites y Escenarios (Fighter, Cyber-Dojo, HUD)',
+    tipo: 'Arte Vectorial 100% Procedimental',
+    autor: 'Jahir Rocha (Autoría propia en código)',
+    licencia: 'MIT License',
+    uso: 'Generados en tiempo real con Phaser.GameObjects.Graphics y generateTexture(). Cero imágenes externas.',
+  },
+  {
+    recurso: 'Sintetizador Acústico (GestorSonido)',
+    tipo: 'Síntesis de Audio en Tiempo Real',
+    autor: 'Jahir Rocha (Autoría propia en código)',
+    licencia: 'MIT License',
+    uso: 'Osciladores matemáticos (sine, square, sawtooth, triangle) y filtros Biquad sobre Web Audio API nativa.',
+  },
+  {
+    recurso: 'Astro 7.4.7 + Tailwind CSS',
+    tipo: 'Framework Frontend (Escaparate Digital)',
+    autor: 'Astro Contributors / Tailwind Labs',
+    licencia: 'MIT License',
+    uso: 'Arquitectura estática e interfaz UI/UX responsiva para GitHub Pages.',
+  },
+  {
+    recurso: 'Tipografías (Impact, Segoe UI, sans-serif)',
+    tipo: 'Fuentes Nativas del Sistema',
+    autor: 'Sistema Operativo / Navegador del Cliente',
+    licencia: 'Uso estándar en cliente',
+    uso: 'Renderizado tipográfico del HUD arcade, marcadores de daño y paneles sin redistribuir archivos .woff/.ttf.',
+  },
+];
+---
+
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NEON KOMBAT: Cyber Arena — Escaparate Oficial | ISWD823</title>
+    <meta
+      name="description"
+      content="En la cima del último Cyber-Dojo de Neo-Kyoto, encarna a KAI y derrota a la IA VEX en duelos 1 vs 1 de 60 segundos. Fighting game arcade 100% procedimental en Phaser 4.0."
+    />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+  </head>
+
+  <body class="min-h-screen bg-[#090514] text-slate-100 selection:bg-cyan-400 selection:text-slate-950">
+    <!-- Capa de Fondo Ambiental Synthwave / Cyber-Dojo -->
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,#26103d_0%,#090514_70%)]"></div>
+      <div
+        class="absolute top-[6%] left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full bg-gradient-to-b from-amber-400/20 via-rose-500/15 to-transparent blur-2xl"
+      ></div>
+      <div class="absolute -left-32 top-1/4 w-96 h-96 rounded-full bg-cyan-500/15 blur-[130px]"></div>
+      <div class="absolute -right-32 top-1/3 w-96 h-96 rounded-full bg-rose-500/15 blur-[130px]"></div>
+      <div class=" absolute bottom-0 -left-1/4 -right-1/4 h-[42vh] cyber-grid-floor opacity-75"></div>
+    </div>
+
+    <!-- =====================================================================
+         NAVBAR ESTILO HUD ARCADE
+         ===================================================================== -->
+    <header
+      class="sticky top-0 z-50 border-b border-cyan-500/25 bg-[#090514]/85 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.65)]"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        <a href="#top" class="flex items-center gap-3 group">
+          <div
+            class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500/20 to-rose-500/20 border border-cyan-400/50 flex items-center justify-center text-2xl shadow-[0_0_15px_rgba(0,240,255,0.3)] group-hover:scale-105 transition"
+          >
+            ⚡
+          </div>
+          <div>
+            <span class="font-display text-2xl tracking-wider text-white block leading-none text-glow-cyan">
+              NEON KOMBAT
+            </span>
+            <span class="text-[11px] font-bold tracking-[0.22em] text-cyan-400 uppercase block mt-0.5">
+              CYBER ARENA · PHASER 4.0
+            </span>
+          </div>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-7 text-sm font-semibold text-slate-300">
+          <a href="#identidad" class="hover:text-cyan-400 transition">Identidad</a>
+          <a href="#lore" class="hover:text-cyan-400 transition">Lore y Dossiers</a>
+          <a href="#resonancia" class="hover:text-cyan-400 transition">Resonancia y Frame Data</a>
+          <a href="#controles" class="hover:text-cyan-400 transition">Controles</a>
+          <a href="#cumplimiento" class="hover:text-cyan-400 transition">ESRB y Legal</a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+          <a
+            href={gameUrl}
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-sm tracking-wider uppercase text-white bg-gradient-to-r from-rose-600 via-rose-500 to-orange-500 border border-white/80 shadow-[0_0_24px_rgba(255,42,84,0.6)] hover:shadow-[0_0_35px_rgba(0,240,255,0.7)] hover:border-cyan-300 hover:-translate-y-0.5 transition-all"
+          >
+            <span>⚡ JUGAR AHORA</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- =====================================================================
+           1. HERO SECTION + ESCAPARATE INTERACTIVO DEL CANVAS
+           ===================================================================== -->
+      <section class="relative pt-10 pb-20 lg:pt-16 lg:pb-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            <!-- Columna Izquierda: Pitch Comercial, Logline y Conversión -->
+            <div class="lg:col-span-6 space-y-6">
+              <div
+                class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/40 text-cyan-300 text-xs font-extrabold tracking-[0.16em] uppercase"
+              >
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                <span>TORNEO CYBER-DOJO 1 VS 1 · CERO ASSETS EXTERNOS</span>
+              </div>
+
+              <div class="space-y-2">
+                <h1
+                  class="font-display text-5xl sm:text-6xl lg:text-7xl tracking-wider uppercase leading-[0.95] text-white"
+                >
+                  NEON <span class="text-cyan-400 text-glow-cyan">KOMBAT</span>
+                </h1>
+                <p class="font-display text-2xl sm:text-3xl tracking-[0.28em] text-amber-400 text-glow-gold uppercase">
+                  CYBER ARENA · ISWD823
+                </p>
+              </div>
+
+              <!-- Logline (Premisa Comercial de Impacto) -->
+              <div
+                class="relative rounded-2xl bg-[#120b24]/90 border border-cyan-500/30 border-l-4 border-l-cyan-400 p-5 shadow-xl"
+              >
+                <span class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-cyan-400 block mb-1.5">
+                  🎯 LOGLINE OFICIAL
+                </span>
+                <p class="text-slate-200 text-base sm:text-lg leading-relaxed">
+                  En la cima del último Cyber-Dojo de Neo-Kyoto, encarna a <strong class="text-cyan-300">KAI</strong>,
+                  un artista marcial biónico que debe derrotar al mejor de tres asaltos de 60 segundos a
+                  <strong class="text-rose-400">VEX</strong>, el implacable ejecutor algorítmico de la red central.
+                  Domina cada <em class="text-amber-300">frame</em> de impacto, bloquea con precisión milimétrica y
+                  sobrecarga tu núcleo de plasma para desatar la <em class="text-cyan-300">Onda Neón</em> antes de que
+                  tu código vital sea purgado.
+                </p>
+              </div>
+
+              <!-- Tagline + Botones de Conversión -->
+              <div class="space-y-4 pt-1">
+                <p class="text-amber-300 font-bold text-sm sm:text-base tracking-wide flex items-center gap-2">
+                  <span>⚡</span>
+                  <span>«Domina el Pulso. Quiebra el Algoritmo. ¡ENTRA AL CYBER-DOJO AHORA!»</span>
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                  <a
+                    href={gameUrl}
+                    class="group relative inline-flex flex-col items-center justify-center px-7 py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-orange-500 text-white font-extrabold border-2 border-white shadow-[0_0_35px_rgba(255,42,84,0.65)] hover:shadow-[0_0_45px_rgba(0,240,255,0.75)] hover:border-cyan-300 hover:-translate-y-0.5 transition-all text-center"
+                  >
+                    <span class="text-lg tracking-wider flex items-center gap-2">
+                      <span>⚡ ¡JUGAR AHORA!</span>
+                      <span class="text-xs px-2 py-0.5 rounded bg-black/30 border border-white/30">PANTALLA COMPLETA</span>
+                    </span>
+                    <span class="text-xs font-medium text-rose-100 mt-0.5">
+                      Abrir el canvas oficial en /my-first-game/ · 60 FPS
+                    </span>
+                  </a>
+
+                  <button
+                    type="button"
+                    id="btn-launch-inline"
+                    class="inline-flex flex-col items-center justify-center px-6 py-4 rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 border-2 border-cyan-400/60 hover:border-cyan-300 text-cyan-300 font-bold transition-all cursor-pointer text-center"
+                  >
+                    <span class="text-base tracking-wide">🕹️ PROBAR EN VIVO AQUÍ</span>
+                    <span class="text-xs text-slate-400 font-normal mt-0.5">Cargar cabina interactiva en página</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Métricas Clave del Motor -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                <div class="rounded-xl bg-[#110c1f]/90 border border-slate-800 p-3.5">
+                  <span class="font-display text-2xl text-cyan-400 block">100%</span>
+                  <span class="text-xs text-slate-400">Arte y Audio Procedimental</span>
+                </div>
+                <div class="rounded-xl bg-[#110c1f]/90 border border-slate-800 p-3.5">
+                  <span class="font-display text-2xl text-amber-400 block">60 SEG</span>
+                  <span class="text-xs text-slate-400">Al Mejor de 3 Rounds</span>
+                </div>
+                <div class="rounded-xl bg-[#110c1f]/90 border border-slate-800 p-3.5">
+                  <span class="font-display text-2xl text-rose-400 block">3 NIVELES</span>
+                  <span class="text-xs text-slate-400">IA Táctica (VEX CPU)</span>
+                </div>
+                <div class="rounded-xl bg-[#110c1f]/90 border border-slate-800 p-3.5">
+                  <span class="font-display text-2xl text-emerald-400 block">PHASER 4.0</span>
+                  <span class="text-xs text-slate-400">WebGL + Web Audio API</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Cabina Cyber-Dojo (Vista Previa SVG + Iframe Jugable Bajo Demanda) -->
+            <div class="lg:col-span-6">
+              <div
+                class="rounded-2xl bg-[#0d0818] border-2 border-cyan-400/50 box-glow-cyan overflow-hidden transition-all"
+              >
+                <!-- Barra Superior de la Cabina Arcade -->
+                <div
+                  class="px-4 py-3 bg-[#140d26] border-b border-slate-800 flex items-center justify-between gap-2"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                    <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
+                    <span class="ml-2 text-xs font-bold tracking-wider text-slate-300 uppercase">
+                      CABINA ARCADE · 960×540 PX
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      id="btn-toggle-preview"
+                      class="hidden text-xs font-bold px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                    >
+                      ✕ Cerrar Vista en Vivo
+                    </button>
+                    <a
+                      href={gameUrl}
+                      class="text-xs font-bold px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/30 transition"
+                    >
+                      ⤢ Pantalla Completa
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Contenedor del Escenario (SVG por defecto / Iframe interactivo al pulsar Probar) -->
+                <div class="relative aspect-video w-full bg-[#090514]">
+                  <!-- Vista Previa Vectorial Fiel de FightScene -->
+                  <div id="arena-preview-wrapper" class="w-full h-full relative group">
+                    <svg
+                      class="w-full h-full block"
+                      viewBox="0 0 960 540"
+                      role="img"
+                      aria-label="Recreación visual del combate entre KAI y VEX en NEON KOMBAT: Cyber Arena"
+                    >
+                      <defs>
+                        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#070410" />
+                          <stop offset="100%" stop-color="#2c113c" />
+                        </linearGradient>
+                        <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#160c28" />
+                          <stop offset="100%" stop-color="#07040d" />
+                        </linearGradient>
+                        <filter id="neonCyan" x="-30%" y="-30%" width="160%" height="160%">
+                          <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#00f0ff" flood-opacity="0.85" />
+                        </filter>
+                        <filter id="neonCrimson" x="-30%" y="-30%" width="160%" height="160%">
+                          <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ff2a54" flood-opacity="0.85" />
+                        </filter>
+                      </defs>
+
+                      <rect width="960" height="456" fill="url(#skyGrad)" />
+                      <circle cx="480" cy="215" r="155" fill="#ff2a54" fill-opacity="0.16" />
+                      <circle cx="480" cy="215" r="115" fill="#ff6d00" fill-opacity="0.28" />
+                      <circle cx="480" cy="215" r="82" fill="#ffd600" fill-opacity="0.42" />
+
+                      <polygon points="0,456 180,250 390,456" fill="#120824" />
+                      <polygon points="260,456 480,235 700,456" fill="#120824" />
+                      <polygon points="570,456 790,245 960,456" fill="#120824" />
+
+                      <rect x="25" y="255" width="75" height="201" fill="#0b0616" />
+                      <rect x="110" y="285" width="65" height="171" fill="#0b0616" />
+                      <rect x="185" y="240" width="82" height="216" fill="#0b0616" />
+                      <rect x="695" y="248" width="80" height="208" fill="#0b0616" />
+                      <rect x="785" y="280" width="68" height="176" fill="#0b0616" />
+                      <rect x="862" y="235" width="75" height="221" fill="#0b0616" />
+
+                      <rect x="0" y="456" width="960" height="84" fill="url(#floorGrad)" />
+                      <line x1="0" y1="456" x2="960" y2="456" stroke="#00f0ff" stroke-width="3.5" stroke-opacity="0.8" />
+                      <line x1="0" y1="478" x2="960" y2="478" stroke="#ff2a54" stroke-width="1" stroke-opacity="0.3" />
+                      <line x1="0" y1="506" x2="960" y2="506" stroke="#ff2a54" stroke-width="1" stroke-opacity="0.3" />
+                      <line x1="190" y1="456" x2="-245" y2="540" stroke="#00f0ff" stroke-width="1.5" stroke-opacity="0.25" />
+                      <line x1="306" y1="456" x2="45" y2="540" stroke="#00f0ff" stroke-width="1.5" stroke-opacity="0.25" />
+                      <line x1="422" y1="456" x2="335" y2="540" stroke="#00f0ff" stroke-width="1.5" stroke-opacity="0.25" />
+                      <line x1="480" y1="456" x2="480" y2="540" stroke="#00f0ff" stroke-width="1.5" stroke-opacity="0.25" />
+                      <line x1="538" y1="456" x2="625" y2="540" stroke="#00f0ff" stroke-width="1.5" stroke-opacity="0.25" />
+                      <line x1="654" y1="456" x2="915" y2="540" stroke="#00f0ff" stroke-width="1.5" stroke-opacity="0.25" />
+                      <line x1="770" y1="456" x2="1205" y2="540" stroke="#00f0ff" stroke-width="1.5" stroke-opacity="0.25" />
+
+                      <rect x="66" y="321" width="8" height="135" fill="#1e1b2e" />
+                      <circle cx="70" cy="316" r="28" fill="#ff2a54" fill-opacity="0.22" />
+                      <circle cx="70" cy="316" r="14" fill="#ff2a54" fill-opacity="0.88" />
+                      <rect x="886" y="321" width="8" height="135" fill="#1e1b2e" />
+                      <circle cx="890" cy="316" r="28" fill="#ff2a54" fill-opacity="0.22" />
+                      <circle cx="890" cy="316" r="14" fill="#ff2a54" fill-opacity="0.88" />
+
+                      <text x="36" y="20" fill="#00f0ff" font-family="sans-serif" font-size="14" font-weight="bold">KAI (TÚ)</text>
+                      <rect x="36" y="26" width="356" height="28" fill="#090612" stroke="#334155" stroke-width="2" />
+                      <rect x="39" y="29" width="310" height="22" fill="#ffb703" fill-opacity="0.85" />
+                      <rect x="39" y="29" width="275" height="22" fill="#00f0ff" />
+                      <circle cx="48" cy="68" r="8" fill="#ffd600" stroke="#ffd600" stroke-width="2" />
+                      <circle cx="72" cy="68" r="8" fill="#1e293b" stroke="#ffd600" stroke-width="2" />
+
+                      <text x="924" y="20" fill="#ff2a54" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="end">VEX (CPU DIFÍCIL)</text>
+                      <rect x="568" y="26" width="356" height="28" fill="#090612" stroke="#334155" stroke-width="2" />
+                      <rect x="651" y="29" width="270" height="22" fill="#ffb703" fill-opacity="0.85" />
+                      <rect x="711" y="29" width="210" height="22" fill="#ff2a54" />
+                      <circle cx="912" cy="68" r="8" fill="#ffd600" stroke="#ffd600" stroke-width="2" />
+                      <circle cx="888" cy="68" r="8" fill="#1e293b" stroke="#ffd600" stroke-width="2" />
+
+                      <rect x="437" y="14" width="86" height="54" fill="#0e0a1a" stroke="#ffd600" stroke-width="3" />
+                      <text x="480" y="53" fill="#ffffff" font-family="Impact, sans-serif" font-size="34" text-anchor="middle">42</text>
+                      <text x="80" y="122" fill="#00f0ff" stroke="#000000" stroke-width="3" font-family="Impact, sans-serif" font-size="28">¡4 HITS!</text>
+
+                      <g transform="translate(275, 456)" filter="url(#neonCyan)">
+                        <ellipse cx="0" cy="3" rx="34" ry="7" fill="#000000" fill-opacity="0.55" />
+                        <ellipse cx="0" cy="-56" rx="34" ry="61" fill="#00f0ff" fill-opacity="0.12" stroke="#00f0ff" stroke-width="2" />
+                        <rect x="-15" y="-44" width="13" height="42" rx="4" fill="#121521" stroke="#0066ff" stroke-width="2" />
+                        <rect x="4" y="-44" width="13" height="42" rx="4" fill="#181c30" stroke="#00f0ff" stroke-width="2.5" />
+                        <rect x="-16" y="-92" width="32" height="46" rx="6" fill="#16192b" stroke="#00f0ff" stroke-width="2.5" />
+                        <polygon points="-12,-88 12,-88 0,-62" fill="#00f0ff" fill-opacity="0.3" />
+                        <circle cx="0" cy="-76" r="4.5" fill="#00f0ff" />
+                        <rect x="-17" y="-56" width="34" height="6" fill="#0066ff" />
+                        <polygon points="-10,-106 -34,-114 -28,-100" fill="#00f0ff" />
+                        <polygon points="-10,-104 -32,-96 -24,-90" fill="#00f0ff" />
+                        <rect x="-12" y="-115" width="24" height="24" rx="7" fill="#181c30" stroke="#00f0ff" stroke-width="2.5" />
+                        <rect x="0" y="-108" width="11" height="6" rx="2" fill="#00f0ff" />
+                        <rect x="12" y="-86" width="28" height="12" rx="4" fill="#1b2038" stroke="#00f0ff" stroke-width="2.5" />
+                        <circle cx="42" cy="-80" r="8" fill="#00f0ff" />
+                      </g>
+
+                      <g transform="translate(475, 380)" filter="url(#neonCyan)">
+                        <ellipse cx="-16" cy="0" rx="34" ry="16" fill="#00f0ff" fill-opacity="0.35" />
+                        <circle cx="0" cy="0" r="15" fill="#00f0ff" />
+                        <circle cx="4" cy="0" r="8" fill="#ffffff" />
+                      </g>
+
+                      <g transform="translate(675, 456) scale(-1, 1)" filter="url(#neonCrimson)">
+                        <ellipse cx="0" cy="3" rx="34" ry="7" fill="#000000" fill-opacity="0.55" />
+                        <rect x="-15" y="-44" width="13" height="42" rx="4" fill="#121521" stroke="#ff7b00" stroke-width="2" />
+                        <rect x="4" y="-44" width="13" height="42" rx="4" fill="#181c30" stroke="#ff2a54" stroke-width="2.5" />
+                        <rect x="-16" y="-92" width="32" height="46" rx="6" fill="#16192b" stroke="#ff2a54" stroke-width="2.5" />
+                        <polygon points="-12,-88 12,-88 0,-62" fill="#ff2a54" fill-opacity="0.3" />
+                        <circle cx="0" cy="-76" r="4.5" fill="#ff2a54" />
+                        <rect x="-17" y="-56" width="34" height="6" fill="#ff7b00" />
+                        <polygon points="-10,-106 -34,-114 -28,-100" fill="#ff2a54" />
+                        <rect x="-12" y="-115" width="24" height="24" rx="7" fill="#181c30" stroke="#ff2a54" stroke-width="2.5" />
+                        <rect x="0" y="-108" width="11" height="6" rx="2" fill="#ff2a54" />
+                        <rect x="14" y="-104" width="16" height="86" rx="8" fill="#ff2a54" fill-opacity="0.25" stroke="#ff2a54" stroke-width="3.5" />
+                      </g>
+
+                      <text x="36" y="496" fill="#ffd600" font-family="sans-serif" font-size="11" font-weight="bold">⚡ ¡ESPECIAL LISTO! PULSA [L]</text>
+                      <rect x="36" y="504" width="244" height="16" fill="#090612" stroke="#ffd600" stroke-width="2" />
+                      <rect x="38" y="506" width="240" height="12" fill="#ffd600" />
+
+                      <text x="924" y="496" fill="#94a3b8" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="end">ENERGÍA CPU (65%)</text>
+                      <rect x="680" y="504" width="244" height="16" fill="#090612" stroke="#ff2a54" stroke-width="2" />
+                      <rect x="766" y="506" width="156" height="12" fill="#ff2a54" />
+                    </svg>
+
+                    <!-- Overlay interactivo para iniciar el juego -->
+                    <div
+                      class="absolute inset-0 bg-slate-950/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4 backdrop-blur-[2px]"
+                    >
+                      <a
+                        href={gameUrl}
+                        class="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm tracking-wider uppercase border-2 border-white shadow-[0_0_30px_rgba(255,42,84,0.9)] transition"
+                      >
+                        ⚡ ABRIR JUEGO EN PANTALLA COMPLETA
+                      </a>
+                      <button
+                        type="button"
+                        id="btn-overlay-inline"
+                        class="px-4 py-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-cyan-300 text-xs font-bold border border-cyan-400/50 cursor-pointer"
+                      >
+                        🕹️ O cargar cabina jugable aquí mismo
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Contenedor del Iframe Jugable en Vivo (Oculto hasta hacer clic en "Probar en vivo aquí") -->
+                  <div id="arena-iframe-wrapper" class="hidden w-full h-full">
+                    <iframe
+                      id="arena-iframe"
+                      data-src={gameEmbedUrl}
+                      title="NEON KOMBAT: Cyber Arena — Juego Interactivo"
+                      class="w-full h-full border-0"
+                      allow="autoplay; fullscreen"
+                    ></iframe>
+                  </div>
+                </div>
+
+                <!-- Barra Inferior de Conversión Rápida -->
+                <div
+                  class="px-5 py-3.5 bg-[#120b22] border-t border-cyan-500/20 flex flex-wrap items-center justify-between gap-3"
+                >
+                  <div class="text-xs text-slate-300 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span>Controles: <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">WASD</kbd> Mover/Saltar · <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">J/K/L</kbd> Atacar</span>
+                  </div>
+                  <a
+                    href={gameUrl}
+                    class="text-xs font-extrabold tracking-wider uppercase text-amber-300 hover:text-cyan-300 transition flex items-center gap-1"
+                  >
+                    <span>IR A /MY-FIRST-GAME/</span>
+                    <span>→</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           2. IDENTIDAD DEL PROYECTO (FUSIÓN DE HISTORIA LÚDICA)
+           ===================================================================== -->
+      <section id="identidad" class="py-20 border-t border-cyan-500/15 bg-[#0b0618]/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center max-w-3xl mx-auto mb-14">
+            <span class="text-xs font-extrabold tracking-[0.25em] text-cyan-400 uppercase block mb-2">
+              FASE 1 · INGENIERÍA DEL PROPÓSITO
+            </span>
+            <h2 class="font-display text-4xl sm:text-5xl tracking-wider uppercase text-white">
+              ADN de Identidad: <span class="text-cyan-400 text-glow-cyan">Cyber-Martial Arcade</span>
+            </h2>
+            <p class="mt-3 text-slate-300 text-base sm:text-lg">
+              Una fusión integral donde el motor matemático en <code class="text-cyan-300 bg-cyan-950/50 px-2 py-0.5 rounded">game.js</code> genera simultáneamente los gráficos vectoriales, la síntesis acústica y la narrativa competitiva.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <article
+              class="rounded-2xl bg-[#120c24]/90 border border-cyan-500/30 border-t-4 border-t-cyan-400 p-7 shadow-xl hover:-translate-y-1 transition"
+            >
+              <span class="text-xs font-extrabold tracking-[0.2em] text-amber-400 uppercase block mb-2">
+                CORE PILLAR (PILAR CENTRAL)
+              </span>
+              <h3 class="text-xl font-bold text-white mb-3">
+                Precisión Táctica a 60 FPS en Cero Assets
+              </h3>
+              <p class="text-slate-300 text-sm leading-relaxed">
+                Combate 1 vs 1 de respuesta inmediata y alto impacto sensorial (<em>hit-stop</em> de 62 ms, sacudida de cámara, partículas aditivas y síntesis de audio en tiempo real) donde cada milisegundo de anticipación, bloqueo y contraataque define la victoria.
+              </p>
+            </article>
+
+            <article
+              class="rounded-2xl bg-[#120c24]/90 border border-rose-500/30 border-t-4 border-t-rose-500 p-7 shadow-xl hover:-translate-y-1 transition"
+            >
+              <span class="text-xs font-extrabold tracking-[0.2em] text-amber-400 uppercase block mb-2">
+                TONO NARRATIVO
+              </span>
+              <h3 class="text-xl font-bold text-white mb-3">
+                Homenaje Arcade + Distopía Synthwave
+              </h3>
+              <p class="text-slate-300 text-sm leading-relaxed">
+                Intenso, eléctrico, competitivo y estilizado. Canaliza la adrenalina de la era dorada de los salones arcade (<em>Mortal Kombat</em>, <em>The King of Fighters</em>) dentro de un duelo futurista entre el instinto marcial humano y la supremacía algorítmica.
+              </p>
+            </article>
+
+            <article
+              class="rounded-2xl bg-[#120c24]/90 border border-amber-500/30 border-t-4 border-t-amber-400 p-7 shadow-xl hover:-translate-y-1 transition"
+            >
+              <span class="text-xs font-extrabold tracking-[0.2em] text-amber-400 uppercase block mb-2">
+                ATMÓSFERA VISUAL Y SONORA
+              </span>
+              <h3 class="text-xl font-bold text-white mb-3">
+                Dualidad Neón 100% Procedimental
+              </h3>
+              <p class="text-slate-300 text-sm leading-relaxed">
+                Contraste cromático absoluto entre el <strong class="text-cyan-300">Cian Eléctrico (#00f0ff)</strong> de KAI y el <strong class="text-rose-400">Carmesí Sintético (#ff2a54)</strong> de VEX sobre el horizonte nocturno (<code class="text-amber-300">#090514</code>), respaldado por osciladores acústicos Web Audio API.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           3. LORE (REGLAS DEL UNIVERSO LÚDICO Y EXPEDIENTES DE COMBATE)
+           ===================================================================== -->
+      <section id="lore" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center max-w-3xl mx-auto mb-14">
+            <span class="text-xs font-extrabold tracking-[0.25em] text-rose-400 uppercase block mb-2">
+              FASE 1 · ARCHIVOS DE NEO-KYOTO 2096
+            </span>
+            <h2 class="font-display text-4xl sm:text-5xl tracking-wider uppercase text-white">
+              Lore: <span class="text-rose-500 text-glow-crimson">Las Reglas del Cyber-Dojo</span>
+            </h2>
+            <p class="mt-3 text-slate-300 text-base sm:text-lg">
+              En la azotea más alta de Neo-Kyoto, cada asalto de 60 segundos decide si la tradición marcial humana prevalece o es purgada por la red central.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- Crónica del Universo (3 Capítulos) -->
+            <div class="lg:col-span-7 rounded-2xl bg-[#110b22]/90 border border-cyan-500/25 p-7 sm:p-9 space-y-7 shadow-2xl">
+              <div class="flex gap-5 items-start pb-7 border-b border-slate-800/80">
+                <span class="font-display text-4xl text-cyan-400 leading-none">01</span>
+                <div>
+                  <h3 class="text-xl font-bold text-white mb-2">El Ocaso de la Carne y el Acero</h3>
+                  <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                    En el año 2096, el honor marcial ya no se mide con acero ni sangre, sino en ciclos de reloj y descargas de fotones sobre la <strong class="text-white">Cyber Arena</strong>: un santuario suspendido entre los rascacielos de Neo-Kyoto bajo el resplandor eterno de un sol sintético. La megacorporación <em>Aethelgard</em> ha declarado obsoletos a los artistas marciales humanos, instaurando a <strong class="text-rose-400">VEX</strong>, un androide de combate de frecuencia carmesí cuya red neuronal calcula distancias, intercepta trayectorias y adapta su agresividad en tiempo real.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex gap-5 items-start pb-7 border-b border-slate-800/80">
+                <span class="font-display text-4xl text-amber-400 leading-none">02</span>
+                <div>
+                  <h3 class="text-xl font-bold text-white mb-2">El Último Discípulo Cian-Ryu</h3>
+                  <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                    Tú controlas a <strong class="text-cyan-300">KAI</strong>, el último maestro del estilo <em>Cian-Ryu</em>, un luchador que integró un exoesqueleto resonante a su propio sistema nervioso para demostrar que la intuición humana supera al cálculo frío de la máquina. Las reglas del <strong class="text-white">Torneo Cyber-Dojo</strong> son inquebrantables: cada combate se disputa al mejor de tres rounds bajo una ventana estricta de <strong class="text-amber-300">60 segundos de sincronización neuronal</strong>. Nadie puede escapar de los límites magnéticos de la plataforma; solo el K.O. directo o la superioridad vital al agotarse el cronómetro determinan quién prevalece.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex gap-5 items-start">
+                <span class="font-display text-4xl text-rose-500 leading-none">03</span>
+                <div>
+                  <h3 class="text-xl font-bold text-white mb-2">El Núcleo de Sobrecarga y la Onda Neón</h3>
+                  <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                    Cada intercambio físico genera resonancia energética: conectar golpes (<code class="text-cyan-300">+20%</code>), mantener una guardia firme con el escudo fotónico (<code class="text-cyan-300">+10%</code>) e incluso resistir el castigo enemigo (<code class="text-cyan-300">+15%</code>) alimentan tu <strong class="text-white">Barra de Energía Especial</strong>. Al alcanzar el <code class="text-amber-300">100%</code> de sobrecarga, el exoesqueleto de KAI despliega un aura pulsante que habilita la técnica definitiva del dojo: la <strong class="text-cyan-300">Onda Neón</strong>, capaz de quebrar la defensa algorítmica de VEX. Si tu integridad cae a cero, la tradición entera del dojo será sobrescrita para siempre.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expedientes de Combatientes y Máquina de Estados de VEX -->
+            <div class="lg:col-span-5 space-y-6">
+              <div class="rounded-2xl bg-[#110b22]/95 border border-cyan-500/40 border-l-4 border-l-cyan-400 p-6 box-glow-cyan">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="px-2.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-xs font-extrabold tracking-wider uppercase">
+                    JUGADOR 1 · HUMANO BIÓNICO
+                  </span>
+                  <span class="font-mono text-xs text-slate-400">#00F0FF / #0066FF</span>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">KAI — Maestro Cian-Ryu</h3>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                  Especialista en lectura de ritmo, control de distancia y canalización cinética. Su armadura responde al instante a tus comandos en teclado.
+                </p>
+              </div>
+
+              <div class="rounded-2xl bg-[#110b22]/95 border border-rose-500/40 border-l-4 border-l-rose-500 p-6 box-glow-crimson space-y-4">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="px-2.5 py-0.5 rounded bg-rose-500/20 text-rose-300 text-xs font-extrabold tracking-wider uppercase">
+                    OPONENTE CPU · EJECUTOR IA
+                  </span>
+                  <span class="font-mono text-xs text-slate-400">#FF2A54 / #FF7B00</span>
+                </div>
+                <div>
+                  <h3 class="text-2xl font-bold text-white mb-1">VEX — Máquina de Estados</h3>
+                  <p class="text-slate-300 text-sm leading-relaxed">
+                    Evalúa distancia horizontal, proyectiles entrantes y ventanas de ataque según 3 protocolos seleccionables en <code class="text-rose-300">MenuScene</code>:
+                  </p>
+                </div>
+
+                <div class="space-y-3 pt-1">
+                  {protocolosIA.map((p) => (
+                    <div class="rounded-xl bg-[#090514]/85 border border-slate-800 p-3.5">
+                      <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                        <strong class="text-xs font-extrabold tracking-wider" style={`color: ${p.colorHex}`}>
+                          {p.nombre}
+                        </strong>
+                        <span class="font-mono text-[11px] text-slate-400">
+                          Reacción: {p.intervalo} · Bloqueo: {p.bloqueo} · Vel: {p.velocidad}
+                        </span>
+                      </div>
+                      <div class="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden mb-2">
+                        <div class="h-full rounded-full" style={`width: ${p.barWidth}; background-color: ${p.colorHex}`}></div>
+                      </div>
+                      <p class="text-xs text-slate-300 leading-relaxed">{p.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           4. RESONANCIA LÚDICA, FRAME DATA Y CONTROLES
+           ===================================================================== -->
+      <section id="resonancia" class="py-20 border-t border-rose-500/15 bg-[#0b0618]/75">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          <div class="text-center max-w-3xl mx-auto">
+            <span class="text-xs font-extrabold tracking-[0.25em] text-amber-400 uppercase block mb-2">
+              FASE 1 · ARMONÍA LUDONARRATIVA
+            </span>
+            <h2 class="font-display text-4xl sm:text-5xl tracking-wider uppercase text-white">
+              Resonancia Lúdica: <span class="text-amber-400 text-glow-gold">La Mecánica como Historia</span>
+            </h2>
+            <p class="mt-3 text-slate-300 text-base sm:text-lg">
+              Cada constante física y ventana de tiempo en <code class="text-cyan-300">CONFIG_JUEGO</code> refuerza la narrativa del combate biónico sin disonancia ludonarrativa.
+            </p>
+          </div>
+
+          <!-- 4 Tarjetas de Resonancia Lúdica -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {resonanciaPills.map((item) => (
+              <article
+                class={`rounded-2xl bg-gradient-to-br ${item.accent} border p-6 sm:p-7 flex gap-5 items-start shadow-xl`}
+              >
+                <div class="w-14 h-14 rounded-2xl bg-slate-950/80 border border-white/15 flex items-center justify-center text-3xl shrink-0">
+                  {item.icono}
+                </div>
+                <div class="space-y-2">
+                  <span class="inline-block font-mono text-[11px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded bg-slate-950/80 text-cyan-300 border border-cyan-500/30">
+                    {item.tag}
+                  </span>
+                  <h3 class="text-xl font-bold text-white">{item.titulo}</h3>
+                  <p class="text-slate-300 text-sm leading-relaxed">{item.explicacion}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <!-- Tarjetas de Frame Data de los 3 Ataques -->
+          <div class="rounded-3xl bg-[#110b22]/90 border border-cyan-500/25 p-7 sm:p-9 shadow-2xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <span class="text-xs font-extrabold tracking-[0.2em] text-amber-400 uppercase block mb-1">
+                  SISTEMA DE COMBATE EN 3 FASES (STARTUP · ACTIVE · RECOVERY)
+                </span>
+                <h3 class="text-2xl sm:text-3xl font-bold text-white">
+                  Frame Data Oficial del Exoesqueleto
+                </h3>
+              </div>
+              <a
+                href={gameUrl}
+                class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/50 text-cyan-300 font-bold text-xs tracking-wider uppercase transition"
+              >
+                ⚡ Probar Combos en el Dojo →
+              </a>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {ataques.map((atk) => (
+                <div
+                  class={`rounded-2xl bg-[#090514]/90 border ${atk.borderClass} ${atk.glowClass} p-6 flex flex-col justify-between transition-all`}
+                >
+                  <div>
+                    <div class="flex items-center justify-between gap-2 mb-4">
+                      <span class={`px-3 py-1 rounded-lg text-xs font-extrabold border ${atk.badgeClass}`}>
+                        Tecla {atk.tecla}
+                      </span>
+                      <span class="font-display text-2xl tracking-wider text-amber-400">{atk.dano}</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-white mb-2">{atk.nombre}</h4>
+                    <p class="text-xs text-slate-300 leading-relaxed mb-6">{atk.rol}</p>
+                  </div>
+
+                  <div class="grid grid-cols-4 gap-2 pt-4 border-t border-slate-800/80 text-center">
+                    <div class="rounded-lg bg-slate-900/90 p-2">
+                      <span class="text-[10px] uppercase text-slate-400 block">Startup</span>
+                      <strong class="text-xs text-cyan-300 font-mono">{atk.startup}</strong>
+                    </div>
+                    <div class="rounded-lg bg-slate-900/90 p-2">
+                      <span class="text-[10px] uppercase text-slate-400 block">Active</span>
+                      <strong class="text-xs text-emerald-300 font-mono">{atk.active}</strong>
+                    </div>
+                    <div class="rounded-lg bg-slate-900/90 p-2">
+                      <span class="text-[10px] uppercase text-slate-400 block">Recovery</span>
+                      <strong class="text-xs text-rose-300 font-mono">{atk.recovery}</strong>
+                    </div>
+                    <div class="rounded-lg bg-slate-900/90 p-2">
+                      <span class="text-[10px] uppercase text-slate-400 block">Empuje</span>
+                      <strong class="text-xs text-amber-300 font-mono">{atk.knockback}</strong>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <!-- Mapa de Controles en Teclado -->
+          <div id="controles" class="rounded-3xl bg-[#110b22]/90 border border-slate-800 p-7 sm:p-9 shadow-2xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <span class="text-xs font-extrabold tracking-[0.2em] text-cyan-400 uppercase block mb-1">
+                  SINCRONIZACIÓN NEURONAL EN TECLADO
+                </span>
+                <h3 class="text-2xl sm:text-3xl font-bold text-white">
+                  Panel de Controles Arcade
+                </h3>
+              </div>
+              <span class="px-3.5 py-1.5 rounded-full bg-slate-900 border border-cyan-500/30 text-xs font-semibold text-cyan-300">
+                Compatible con WASD + Flechas de Dirección + J / K / L
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {controles.map((c) => (
+                <div class="flex items-center gap-4 rounded-xl bg-[#090514]/80 border border-slate-800/90 hover:border-cyan-500/40 p-4 transition">
+                  <kbd
+                    class="min-w-[140px] text-center px-3 py-2.5 rounded-xl bg-[#17112b] border border-cyan-400/50 shadow-[0_4px_0_#0066ff] font-mono text-xs font-extrabold text-white shrink-0"
+                  >
+                    {c.tecla}
+                  </kbd>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <strong class="text-sm font-bold text-white truncate">{c.accion}</strong>
+                      <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-slate-800 text-cyan-300">
+                        {c.cat}
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">{c.detalle}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           5. FASE 2: ESTRUCTURA DE CUMPLIMIENTO (ESRB, LICENCIAS Y PRIVACIDAD)
+           ===================================================================== -->
+      <section id="cumplimiento" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <div class="text-center max-w-3xl mx-auto">
+            <span class="text-xs font-extrabold tracking-[0.25em] text-cyan-400 uppercase block mb-2">
+              FASE 2 · ESTRUCTURA DE CUMPLIMIENTO COMERCIAL
+            </span>
+            <h2 class="font-display text-4xl sm:text-5xl tracking-wider uppercase text-white">
+              Clasificación <span class="text-cyan-400 text-glow-cyan">ESRB</span>, Licencias y Privacidad
+            </h2>
+            <p class="mt-3 text-slate-300 text-base sm:text-lg">
+              Auditoría completa de intensidad visual, propiedad intelectual bajo licencia MIT y ejecución 100% privada en el navegador del jugador.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Distintivo ESRB E10+ y Análisis de Intensidad Visual -->
+            <article class="lg:col-span-6 rounded-3xl bg-[#110b22]/95 border border-cyan-500/30 p-7 sm:p-8 shadow-2xl space-y-6">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-6 pb-6 border-b border-slate-800">
+                <!-- Sello Visual Estilo ESRB -->
+                <div
+                  class="w-28 shrink-0 bg-white text-black border-4 border-black ring-2 ring-cyan-400 rounded-md text-center font-display select-none shadow-lg"
+                  aria-label="Clasificación ESRB Everyone 10+"
+                >
+                  <div class="bg-black text-white text-[11px] tracking-[0.2em] py-1">ESRB</div>
+                  <div class="text-4xl font-black py-2 leading-none">E10+</div>
+                  <div class="bg-black text-white text-[10px] tracking-wider py-1">TODOS +10</div>
+                </div>
+
+                <div class="space-y-2">
+                  <span class="text-xs font-extrabold tracking-[0.2em] text-amber-400 uppercase block">
+                    CLASIFICACIÓN DE AUDIENCIA
+                  </span>
+                  <h3 class="text-2xl font-bold text-white">Everyone 10+ (Todos mayores de 10 años)</h3>
+                  <ul class="text-xs text-slate-300 space-y-1">
+                    <li class="flex items-center gap-2">
+                      <span class="text-cyan-400">▸</span>
+                      <span><strong>Violencia de Fantasía Leve</strong> (<em>Fantasy Violence</em>)</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <span class="text-cyan-400">▸</span>
+                      <span><strong>Destellos Luminosos Controlados</strong> (<em>Mild Arcade Flash Effects</em>)</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <span class="text-cyan-400">▸</span>
+                      <span><strong>Cero Sangre / Cero Gore / Cero Lenguaje Inapropiado</strong></span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="space-y-3 text-sm text-slate-300 leading-relaxed">
+                <h4 class="font-bold text-cyan-300 uppercase text-xs tracking-wider">
+                  Análisis Técnico de Intensidad Visual (Extraído de game.js)
+                </h4>
+                <p>
+                  Los luchadores (<strong>KAI</strong> y <strong>VEX</strong>) son siluetas biónicas abstractas construidas con primitivas geométricas (<code class="text-cyan-300">fillRoundedRect</code>, <code class="text-cyan-300">fillTriangle</code>, <code class="text-cyan-300">fillCircle</code>). Los impactos se representan mediante destellos blancos de <code class="text-cyan-300">150 ms</code>, partículas de neón aditivas y sacudidas de cámara acotadas (<code class="text-cyan-300">70 ms</code> a <code class="text-cyan-300">360 ms</code>), sin daño anatómico realista.
+                </p>
+                <div class="p-4 rounded-xl bg-cyan-500/10 border-l-4 border-l-cyan-400 text-xs text-slate-200">
+                  <strong>Justificación Creativa:</strong> La acción transcurre en un torneo deportivo cyber-marcial regulado donde dos exoesqueletos compiten mediante pulsos fotónicos, ofreciendo toda la emoción competitiva de un arcade clásico en un entorno seguro y apto para mayores de 10 años.
+                </div>
+              </div>
+            </article>
+
+            <!-- Privacidad y Manejo de Datos Locales -->
+            <article class="lg:col-span-6 rounded-3xl bg-[#110b22]/95 border border-emerald-500/30 p-7 sm:p-8 shadow-2xl space-y-6">
+              <div class="flex items-center gap-4 pb-5 border-b border-slate-800">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 flex items-center justify-center text-3xl">
+                  🔒
+                </div>
+                <div>
+                  <span class="text-xs font-extrabold tracking-[0.2em] text-emerald-400 uppercase block">
+                    ARQUITECTURA ZERO-TELEMETRY
+                  </span>
+                  <h3 class="text-2xl font-bold text-white">Privacidad y Ejecución 100% en Cliente</h3>
+                </div>
+              </div>
+
+              <p class="text-sm text-slate-300 leading-relaxed">
+                <strong>NEON KOMBAT: Cyber Arena</strong> se ejecuta <strong>100% del lado del cliente (Client-Side)</strong> dentro del entorno aislado (<em>sandbox</em>) del navegador web del jugador:
+              </p>
+
+              <ul class="space-y-3 text-xs sm:text-sm text-slate-300">
+                <li class="p-3.5 rounded-xl bg-[#090514]/85 border-l-4 border-l-emerald-400">
+                  <strong class="text-white block mb-0.5">1. Estado Efímero en Memoria RAM:</strong>
+                  La dificultad elegida (<code class="text-emerald-300">facil</code>, <code class="text-emerald-300">normal</code>, <code class="text-emerald-300">dificil</code>), el estado de silencio y las estadísticas de combate viven únicamente en variables volátiles de JavaScript entre escenas (<code class="text-emerald-300">MenuScene → FightScene → ResultScene</code>) y se destruyen al cerrar la pestaña.
+                </li>
+                <li class="p-3.5 rounded-xl bg-[#090514]/85 border-l-4 border-l-emerald-400">
+                  <strong class="text-white block mb-0.5">2. Cero Cookies ni Rastreo Persistente:</strong>
+                  El juego no utiliza cookies de seguimiento ni almacena perfiles personales en <code class="text-emerald-300">localStorage</code> o <code class="text-emerald-300">IndexedDB</code>.
+                </li>
+                <li class="p-3.5 rounded-xl bg-[#090514]/85 border-l-4 border-l-emerald-400">
+                  <strong class="text-white block mb-0.5">3. Cero Exfiltración de Datos Personales:</strong>
+                  No realiza peticiones a servidores externos ni recolecta telemetría de usuario, garantizando privacidad absoluta por diseño (<em>Privacy by Design</em>).
+                </li>
+              </ul>
+            </article>
+          </div>
+
+          <!-- Tabla de Auditoría de Propiedad Intelectual y Atribuciones -->
+          <div class="rounded-3xl bg-[#110b22]/95 border border-amber-500/30 p-7 sm:p-9 shadow-2xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <span class="text-xs font-extrabold tracking-[0.2em] text-amber-400 uppercase block mb-1">
+                  PROPIEDAD INTELECTUAL · AUDITORÍA Y ATRIBUCIÓN
+                </span>
+                <h3 class="text-2xl font-bold text-white">
+                  Licencia del Código (MIT License) y Créditos Tecnológicos
+                </h3>
+              </div>
+              <span class="px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-amber-300 text-xs font-extrabold">
+                © 2026 Jahir Rocha · MIT License
+              </span>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="border-b border-slate-800 text-xs uppercase tracking-wider text-cyan-400 bg-[#090514]/90">
+                    <th class="py-3.5 px-4 rounded-tl-xl">Recurso / Componente</th>
+                    <th class="py-3.5 px-4">Tipo</th>
+                    <th class="py-3.5 px-4">Autor / Proveedor</th>
+                    <th class="py-3.5 px-4">Licencia</th>
+                    <th class="py-3.5 px-4 rounded-tr-xl">Uso en el Proyecto</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/70 text-slate-300">
+                  {atribuciones.map((row) => (
+                    <tr class="hover:bg-white/[0.02] transition">
+                      <td class="py-3.5 px-4 font-bold text-white">{row.recurso}</td>
+                      <td class="py-3.5 px-4 text-xs">{row.tipo}</td>
+                      <td class="py-3.5 px-4 text-xs">{row.autor}</td>
+                      <td class="py-3.5 px-4">
+                        <span class="inline-block px-2.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-bold whitespace-nowrap">
+                          {row.licencia}
+                        </span>
+                      </td>
+                      <td class="py-3.5 px-4 text-xs text-slate-400">{row.uso}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           6. CTA FINAL DE CONVERSIÓN
+           ===================================================================== -->
+      <section class="py-16">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div
+            class="rounded-3xl bg-gradient-to-r from-[#190d30] via-[#2b1040] to-[#190d30] border-2 border-cyan-400/70 p-8 sm:p-12 text-center box-glow-cyan space-y-6"
+          >
+            <span class="inline-block px-4 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 text-xs font-extrabold tracking-[0.2em] uppercase">
+              ⚡ LA ARENA DE NEO-KYOTO TE ESPERA ⚡
+            </span>
+            <h2 class="font-display text-4xl sm:text-5xl tracking-wider uppercase text-white">
+              ¿Listo para derrotar a VEX en el Cyber-Dojo?
+            </h2>
+            <p class="max-w-2xl mx-auto text-slate-200 text-base sm:text-lg">
+              Entra directamente al canvas interactivo de <strong>NEON KOMBAT: Cyber Arena</strong>. Sin instalaciones, con gráficos vectoriales y audio sintetizado en vivo a 60 FPS.
+            </p>
+            <div class="pt-2">
+              <a
+                href={gameUrl}
+                class="inline-flex flex-col items-center justify-center px-9 py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-orange-500 text-white font-extrabold border-2 border-white shadow-[0_0_40px_rgba(255,42,84,0.8)] hover:shadow-[0_0_55px_rgba(0,240,255,0.85)] hover:border-cyan-300 hover:-translate-y-0.5 transition-all"
+              >
+                <span class="text-xl tracking-wider uppercase">⚡ ¡JUGAR AHORA EN EL NAVEGADOR!</span>
+                <span class="text-xs text-rose-100 mt-0.5">Ruta directa: {gameUrl}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-[#06030d] py-8 text-xs text-slate-400">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <strong class="text-white text-sm">⚡ NEON KOMBAT: Cyber Arena (ISWD823)</strong>
+          <p class="mt-0.5">Desarrollado por Jahir Rocha · Escuela Politécnica Nacional · Distribuido bajo MIT License.</p>
+        </div>
+        <div class="flex items-center gap-6 font-bold text-cyan-400">
+          <a href={gameUrl} class="hover:text-white transition">Jugar Ahora</a>
+          <a
+            href="https://github.com/2026B-Sof-Jueg-Gr3/rocha-jahir-jueg-gr3"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover:text-white transition"
+          >
+            Repositorio GitHub ↗
+          </a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Script para activar la cabina interactiva embebida bajo demanda -->
+    <script is:inline>
+      const btnInline = document.getElementById('btn-launch-inline');
+      const btnOverlayInline = document.getElementById('btn-overlay-inline');
+      const btnClosePreview = document.getElementById('btn-toggle-preview');
+      const previewWrapper = document.getElementById('arena-preview-wrapper');
+      const iframeWrapper = document.getElementById('arena-iframe-wrapper');
+      const arenaIframe = document.getElementById('arena-iframe');
+
+      function activateInlineGame() {
+        if (!previewWrapper || !iframeWrapper || !arenaIframe) return;
+        const targetSrc = arenaIframe.getAttribute('data-src');
+        if (targetSrc && !arenaIframe.getAttribute('src')) {
+          arenaIframe.setAttribute('src', targetSrc);
+        }
+        previewWrapper.classList.add('hidden');
+        iframeWrapper.classList.remove('hidden');
+        if (btnClosePreview) btnClosePreview.classList.remove('hidden');
+        arenaIframe.focus();
+      }
+
+      function closeInlineGame() {
+        if (!previewWrapper || !iframeWrapper || !arenaIframe) return;
+        arenaIframe.removeAttribute('src');
+        iframeWrapper.classList.add('hidden');
+        previewWrapper.classList.remove('hidden');
+        if (btnClosePreview) btnClosePreview.classList.add('hidden');
+      }
+
+      if (btnInline) btnInline.addEventListener('click', activateInlineGame);
+      if (btnOverlayInline) btnOverlayInline.addEventListener('click', activateInlineGame);
+      if (btnClosePreview) btnClosePreview.addEventListener('click', closeInlineGame);
+    </script>
+  </body>
+</html>
