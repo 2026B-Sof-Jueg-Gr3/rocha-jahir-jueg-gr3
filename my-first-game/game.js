@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * NEON KOMBAT: CYBER ARENA - ISWD823
- * Juego de peleas 1 vs 1 (Jugador vs CPU) en Phaser 3.80.1
+ * Juego de peleas 1 vs 1 (Jugador vs CPU) en Phaser 4.0.0
  * 100% gráficos procedimentales y audio sintetizado (CERO assets externos)
  * ============================================================================
  */
@@ -315,6 +315,33 @@ function asegurarTexturasBase(scene) {
     g.generateTexture("tex_particula", 16, 16);
     g.destroy();
   }
+}
+
+function transicionarAEscena(scene, destino, datos = {}, duracionMs = 320) {
+  let ejecutado = false;
+  const cambiar = () => {
+    if (ejecutado) return;
+    ejecutado = true;
+    if (scene && scene.scene) {
+      scene.scene.start(destino, datos);
+    }
+  };
+
+  const cam = scene && scene.cameras ? scene.cameras.main : null;
+  if (!cam) {
+    cambiar();
+    return;
+  }
+
+  if (cam.fadeEffect) {
+    cam.fadeEffect.reset();
+  }
+
+  cam.once("camerafadeoutcomplete", cambiar);
+  cam.fadeOut(duracionMs, 0, 0, 0);
+
+  // Respaldo de seguridad por si el evento de cámara no se dispara
+  setTimeout(cambiar, duracionMs + 100);
 }
 
 // ============================================================================
@@ -1020,12 +1047,21 @@ class MenuScene extends Phaser.Scene {
     });
 
     this.events.once("shutdown", () => {
-      this.input.keyboard.removeAllListeners();
-      this.time.removeAllEvents();
-      this.tweens.killAll();
+      if (this.input && this.input.keyboard) {
+        this.input.keyboard.removeAllListeners();
+      }
+      if (this.time) {
+        this.time.removeAllEvents();
+      }
+      if (this.tweens) {
+        this.tweens.killAll();
+      }
     });
 
     asegurarTexturasBase(this);
+    if (this.cameras.main.fadeEffect) {
+      this.cameras.main.fadeEffect.reset();
+    }
     this.cameras.main.fadeIn(350, 0, 0, 0);
 
     this.dibujarFondoMenu();
@@ -1326,10 +1362,7 @@ class MenuScene extends Phaser.Scene {
     this.enTransicion = true;
     SONIDO.uiConfirmar();
 
-    this.cameras.main.fadeOut(320, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("FightScene", { dificultad: this.dificultadSeleccionada });
-    });
+    transicionarAEscena(this, "FightScene", { dificultad: this.dificultadSeleccionada }, 320);
   }
 }
 
@@ -1389,14 +1422,25 @@ class FightScene extends Phaser.Scene {
     });
 
     this.events.once("shutdown", () => {
-      this.input.keyboard.removeAllListeners();
-      this.time.removeAllEvents();
-      this.tweens.killAll();
-      this.physics.world.timeScale = 1;
-      this.physics.world.resume();
+      if (this.input && this.input.keyboard) {
+        this.input.keyboard.removeAllListeners();
+      }
+      if (this.time) {
+        this.time.removeAllEvents();
+      }
+      if (this.tweens) {
+        this.tweens.killAll();
+      }
+      if (this.physics && this.physics.world) {
+        this.physics.world.timeScale = 1;
+        this.physics.world.resume();
+      }
     });
 
     asegurarTexturasBase(this);
+    if (this.cameras.main.fadeEffect) {
+      this.cameras.main.fadeEffect.reset();
+    }
     this.cameras.main.fadeIn(320, 0, 0, 0);
 
     // 1. Escenario multicapa con elementos animados
@@ -2002,16 +2046,18 @@ class FightScene extends Phaser.Scene {
 
       if (finPartida) {
         const ganoJugador = this.roundsJugador > this.roundsCPU;
-        this.cameras.main.fadeOut(420, 0, 0, 0);
-        this.cameras.main.once("camerafadeoutcomplete", () => {
-          this.scene.start("ResultScene", {
+        transicionarAEscena(
+          this,
+          "ResultScene",
+          {
             victoria: ganoJugador,
             roundsJugador: this.roundsJugador,
             roundsCPU: this.roundsCPU,
             estadisticas: this.estadisticas,
             dificultad: this.confDificultad.id,
-          });
-        });
+          },
+          420
+        );
       } else {
         // Incrementar siempre el número de round cuando se juega un round nuevo
         this.roundActual++;
@@ -2734,12 +2780,21 @@ class ResultScene extends Phaser.Scene {
     });
 
     this.events.once("shutdown", () => {
-      this.input.keyboard.removeAllListeners();
-      this.time.removeAllEvents();
-      this.tweens.killAll();
+      if (this.input && this.input.keyboard) {
+        this.input.keyboard.removeAllListeners();
+      }
+      if (this.time) {
+        this.time.removeAllEvents();
+      }
+      if (this.tweens) {
+        this.tweens.killAll();
+      }
     });
 
     asegurarTexturasBase(this);
+    if (this.cameras.main.fadeEffect) {
+      this.cameras.main.fadeEffect.reset();
+    }
     this.cameras.main.fadeIn(350, 0, 0, 0);
 
     const { ANCHO, ALTO } = CONFIG_JUEGO;
@@ -2892,6 +2947,7 @@ class ResultScene extends Phaser.Scene {
     this.input.keyboard.on("keydown-ENTER", () => this.reintentar());
     this.input.keyboard.on("keydown-SPACE", () => this.reintentar());
     this.input.keyboard.on("keydown-ESC", () => this.irAlMenu());
+    this.input.keyboard.on("keydown-M", () => SONIDO.alternarSilencio());
   }
 
   reintentar() {
@@ -2899,10 +2955,7 @@ class ResultScene extends Phaser.Scene {
     this.enTransicion = true;
     SONIDO.uiConfirmar();
 
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("FightScene", { dificultad: this.dificultad });
-    });
+    transicionarAEscena(this, "FightScene", { dificultad: this.dificultad }, 300);
   }
 
   irAlMenu() {
@@ -2910,15 +2963,12 @@ class ResultScene extends Phaser.Scene {
     this.enTransicion = true;
     SONIDO.uiMover();
 
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("MenuScene", { dificultad: this.dificultad });
-    });
+    transicionarAEscena(this, "MenuScene", { dificultad: this.dificultad }, 300);
   }
 }
 
 // ============================================================================
-// 8. CONFIGURACIÓN E INICIALIZACIÓN DE PHASER 3
+// 8. CONFIGURACIÓN E INICIALIZACIÓN DE PHASER 4.0
 // ============================================================================
 const configPhaser = {
   type: Phaser.AUTO,
